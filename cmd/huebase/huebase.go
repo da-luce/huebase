@@ -6,29 +6,24 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 
 	"github.com/da-luce/huebase/internal/adapters"
 )
 
-var readers = map[string]adapters.Reader{
-	"base16":    &adapters.Base16Adapter{},
-	"16":        &adapters.Base16Adapter{},
-	"alacritty": &adapters.AlacrittyAdapter{},
-}
-
-var writers = map[string]adapters.Writer{
-	"base16":    &adapters.Base16Adapter{},
-	"16":        &adapters.Base16Adapter{},
-	"alacritty": &adapters.AlacrittyAdapter{},
+var schemes = map[string]adapters.Adapter{
+	"base16":    &adapters.Base16Scheme{},
+	"16":        &adapters.Base16Scheme{},
+	"alacritty": &adapters.AlacrittyScheme{},
 }
 
 func convertTheme(inputFile string, inputFormat string, outputFormat string) (string, error) {
 	// Ensure the formats are supported
-	inputReader, ok := readers[inputFormat]
+	inputReader, ok := schemes[inputFormat]
 	if !ok {
 		return "", errors.New("unsupported input format: " + inputFormat)
 	}
-	outputWriter, ok := writers[outputFormat]
+	outputWriter, ok := schemes[outputFormat]
 	if !ok {
 		return "", errors.New("unsupported output format: " + outputFormat)
 	}
@@ -39,18 +34,30 @@ func convertTheme(inputFile string, inputFormat string, outputFormat string) (st
 		return "", fmt.Errorf("failed to read input file: %v", err)
 	}
 
-	// Convert to AbstractTheme
-	abstractTheme, err := inputReader.FromString(string(inputData))
+	// Convert to struct
+	inputStruct, err := inputReader.FromString(string(inputData))
 	if err != nil {
 		return "", fmt.Errorf("failed to parse input file: %v", err)
 	}
 
-	// Convert AbstractTheme to output format
-	outputData, err := outputWriter.ToString(abstractTheme)
+	// Convert to AbstractTheme
+	abstractTheme, err := adapters.ToAbstract(inputStruct)
 	if err != nil {
-		return "", fmt.Errorf("failed to convert theme: %v", err)
+		return "", fmt.Errorf("failed to parse input file: %v", err)
 	}
 
+	// Create an instance of the output struct
+	outputStructType := reflect.TypeOf(outputWriter).Elem()
+	outputStruct := reflect.New(outputStructType).Interface()
+
+	// Convert AbstractTheme to output format
+	adapters.FromAbstract(abstractTheme, outputStruct)
+
+	// Convert output to string
+	outputData, err := outputWriter.ToString(outputStruct)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert theme to output format: %v", err)
+	}
 	return outputData, nil
 }
 

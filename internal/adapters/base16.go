@@ -29,45 +29,24 @@ type Base16Scheme struct {
 }
 
 // FromString converts a Base16 YAML string into an AbstractScheme.
-func (rw Base16Adapter) FromString(input string) (AbstractScheme, error) {
+func (rw Base16Scheme) FromString(input string) (Adapter, error) {
 	var base16 Base16Scheme
+	// Unmarshal the YAML input into a Base16Scheme struct
 	err := yaml.Unmarshal([]byte(input), &base16)
 	if err != nil {
-		// Include a prefix with context and truncate input for readability if it's long
-		return AbstractScheme{}, fmt.Errorf("failed to unmarshal Base16 YAML. Input: %.100s... Error: %w", input, err)
+		return nil, fmt.Errorf("failed to unmarshal Base16 YAML: %w", err)
 	}
-	var abstract AbstractScheme
-	PopulateAbstractScheme(base16, &abstract)
 
-	return abstract, nil
+	// Wrap the parsed Base16Scheme in a new Base16Adapter instance
+	return base16, nil
 }
 
-// ToString converts an AbstractScheme into a Base16 YAML string.
-func (rw Base16Adapter) ToString(theme AbstractScheme) (string, error) {
-	base16 := Base16Scheme{
-		Scheme: theme.Metadata.Name,
-		Author: theme.Metadata.Author,
-		Base00: theme.SpecialColors.Background,
-		Base01: theme.SpecialColors.Selection,
-		Base02: theme.SpecialColors.Selection,
-		Base03: theme.AnsiColors.BrightBlack,
-		Base04: theme.SpecialColors.Cursor,
-		Base05: theme.SpecialColors.Foreground,
-		Base06: theme.AnsiColors.White,
-		Base07: theme.AnsiColors.BrightWhite,
-		Base08: theme.AnsiColors.Red,
-		Base09: theme.AnsiColors.BrightRed,
-		Base0A: theme.AnsiColors.Yellow,
-		Base0B: theme.AnsiColors.Green,
-		Base0C: theme.AnsiColors.Cyan,
-		Base0D: theme.AnsiColors.Blue,
-		Base0E: theme.AnsiColors.Magenta,
-		Base0F: theme.AnsiColors.BrightMagenta,
-	}
-
-	data, err := yaml.Marshal(base16)
+// ToString converts the Base16Adapter's internal Base16Scheme into a YAML string.
+func (adapter Base16Scheme) ToString(input interface{}) (string, error) {
+	// Marshal the input struct into YAML
+	data, err := yaml.Marshal(input)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to marshal struct to YAML: %w", err)
 	}
 	return string(data), nil
 }
