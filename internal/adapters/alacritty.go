@@ -3,41 +3,55 @@ package adapters
 import "github.com/pelletier/go-toml"
 
 // AlacrittyScheme defines the structure for an Alacritty color scheme.
+type Primary struct {
+	Background Color `toml:"background"`
+	Foreground Color `toml:"foreground"`
+}
+
+type Cursor struct {
+	Cursor Color `toml:"cursor"`
+	Text   Color `toml:"text"`
+}
+
+type Normal struct {
+	Black   Color `toml:"black"`
+	Blue    Color `toml:"blue"`
+	Cyan    Color `toml:"cyan"`
+	Green   Color `toml:"green"`
+	Magenta Color `toml:"magenta"`
+	Red     Color `toml:"red"`
+	White   Color `toml:"white"`
+	Yellow  Color `toml:"yellow"`
+}
+
+type Bright struct {
+	Black   Color `toml:"black"`
+	Blue    Color `toml:"blue"`
+	Cyan    Color `toml:"cyan"`
+	Green   Color `toml:"green"`
+	Magenta Color `toml:"magenta"`
+	Red     Color `toml:"red"`
+	White   Color `toml:"white"`
+	Yellow  Color `toml:"yellow"`
+}
+
+type Selection struct {
+	Background Color `toml:"background"`
+	Text       Color `toml:"text"`
+}
+
+// Combine into a Colors struct
+type Colors struct {
+	Primary   Primary   `toml:"primary"`
+	Cursor    Cursor    `toml:"cursor"`
+	Normal    Normal    `toml:"normal"`
+	Bright    Bright    `toml:"colors.bright"`
+	Selection Selection `toml:"selection"`
+}
+
+// Final AlacrittyScheme struct
 type AlacrittyScheme struct {
-	Colors struct {
-		Primary struct {
-			Background Color `toml:"background"`
-			Foreground Color `toml:"foreground"`
-		}
-		Cursor struct {
-			Cursor Color `toml:"cursor"`
-			Text   Color `toml:"text"`
-		}
-		Normal struct {
-			Black   Color `toml:"black"`
-			Blue    Color `toml:"blue"`
-			Cyan    Color `toml:"cyan"`
-			Green   Color `toml:"green"`
-			Magenta Color `toml:"magenta"`
-			Red     Color `toml:"red"`
-			White   Color `toml:"white"`
-			Yellow  Color `toml:"yellow"`
-		}
-		Bright struct {
-			Black   Color `toml:"black"`
-			Blue    Color `toml:"blue"`
-			Cyan    Color `toml:"cyan"`
-			Green   Color `toml:"green"`
-			Magenta Color `toml:"magenta"`
-			Red     Color `toml:"red"`
-			White   Color `toml:"white"`
-			Yellow  Color `toml:"yellow"`
-		} `toml:"colors.bright"`
-		Selection struct {
-			Background Color `toml:"background"`
-			Text       Color `toml:"text"`
-		}
-	} `toml:"colors"`
+	Colors Colors `toml:"colors"`
 }
 
 // FromString parses an Alacritty TOML string into an AbstractScheme.
@@ -87,64 +101,16 @@ func (rw AlacrittyAdapter) FromString(input string) (AbstractScheme, error) {
 func (rw AlacrittyAdapter) ToString(theme AbstractScheme) (string, error) {
 	// Map AbstractScheme to AlacrittyScheme
 	alacritty := AlacrittyScheme{
-		Colors: struct {
-			Primary struct {
-				Background Color `toml:"background"`
-				Foreground Color `toml:"foreground"`
-			}
-			Cursor struct {
-				Cursor Color `toml:"cursor"`
-				Text   Color `toml:"text"`
-			}
-			Normal struct {
-				Black   Color `toml:"black"`
-				Blue    Color `toml:"blue"`
-				Cyan    Color `toml:"cyan"`
-				Green   Color `toml:"green"`
-				Magenta Color `toml:"magenta"`
-				Red     Color `toml:"red"`
-				White   Color `toml:"white"`
-				Yellow  Color `toml:"yellow"`
-			}
-			Bright struct {
-				Black   Color `toml:"black"`
-				Blue    Color `toml:"blue"`
-				Cyan    Color `toml:"cyan"`
-				Green   Color `toml:"green"`
-				Magenta Color `toml:"magenta"`
-				Red     Color `toml:"red"`
-				White   Color `toml:"white"`
-				Yellow  Color `toml:"yellow"`
-			} `toml:"colors.bright"`
-			Selection struct {
-				Background Color `toml:"background"`
-				Text       Color `toml:"text"`
-			}
-		}{
-			Primary: struct {
-				Background Color `toml:"background"`
-				Foreground Color `toml:"foreground"`
-			}{
+		Colors{
+			Primary{
 				Background: theme.SpecialColors.Background,
 				Foreground: theme.SpecialColors.Foreground,
 			},
-			Cursor: struct {
-				Cursor Color `toml:"cursor"`
-				Text   Color `toml:"text"`
-			}{
+			Cursor{
 				Cursor: theme.SpecialColors.Cursor,
 				Text:   theme.SpecialColors.CursorText,
 			},
-			Normal: struct {
-				Black   Color `toml:"black"`
-				Blue    Color `toml:"blue"`
-				Cyan    Color `toml:"cyan"`
-				Green   Color `toml:"green"`
-				Magenta Color `toml:"magenta"`
-				Red     Color `toml:"red"`
-				White   Color `toml:"white"`
-				Yellow  Color `toml:"yellow"`
-			}{
+			Normal{
 				Black:   theme.AnsiColors.Black,
 				Red:     theme.AnsiColors.Red,
 				Green:   theme.AnsiColors.Green,
@@ -154,16 +120,7 @@ func (rw AlacrittyAdapter) ToString(theme AbstractScheme) (string, error) {
 				Cyan:    theme.AnsiColors.Cyan,
 				White:   theme.AnsiColors.White,
 			},
-			Bright: struct {
-				Black   Color `toml:"black"`
-				Blue    Color `toml:"blue"`
-				Cyan    Color `toml:"cyan"`
-				Green   Color `toml:"green"`
-				Magenta Color `toml:"magenta"`
-				Red     Color `toml:"red"`
-				White   Color `toml:"white"`
-				Yellow  Color `toml:"yellow"`
-			}{
+			Bright{
 				Black:   theme.AnsiColors.BrightBlack,
 				Red:     theme.AnsiColors.BrightRed,
 				Green:   theme.AnsiColors.BrightGreen,
@@ -173,10 +130,7 @@ func (rw AlacrittyAdapter) ToString(theme AbstractScheme) (string, error) {
 				Cyan:    theme.AnsiColors.BrightCyan,
 				White:   theme.AnsiColors.BrightWhite,
 			},
-			Selection: struct {
-				Background Color `toml:"background"`
-				Text       Color `toml:"text"`
-			}{
+			Selection{
 				Background: theme.SpecialColors.Selection,
 				Text:       theme.SpecialColors.SelectedText,
 			},
