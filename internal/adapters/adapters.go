@@ -108,6 +108,54 @@ func ToAbstract(input interface{}) (*AbstractScheme, error) {
 	return abstract, nil
 }
 
+func visitFields(value reflect.Value, visitFunc func(field reflect.StructField, value reflect.Value)) {
+	// Ensure the value is a struct or a pointer to a struct
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
+	if value.Kind() != reflect.Struct {
+		return
+	}
+
+	// Iterate over the fields of the struct
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Type().Field(i)
+		fieldValue := value.Field(i)
+
+		// Do not recurse further on Color structs and the like
+		if isBaseType(field.Type) {
+			visitFunc(field, fieldValue)
+			continue
+		}
+
+		// Visit the current field
+		visitFunc(field, fieldValue)
+
+		// Recursively visit nested structs
+		if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() && fieldValue.Elem().Kind() == reflect.Struct {
+			visitFields(fieldValue, visitFunc)
+		} else if fieldValue.Kind() == reflect.Struct {
+			visitFields(fieldValue, visitFunc)
+		}
+	}
+}
+
+func isBaseType(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.String, reflect.Int, reflect.Int64, reflect.Float64, reflect.Bool:
+		return true
+	case reflect.Ptr:
+		// Check if the pointer points to a base type
+		return isBaseType(t.Elem())
+	default:
+		// Add custom types (like Color) if necessary
+		if t.Name() == "Color" {
+			return true
+		}
+		return false
+	}
+}
+
 func FromAbstract(abstract *AbstractScheme, output interface{}) {
 	// Ensure `abstract` is not nil
 	if abstract == nil {
@@ -120,41 +168,39 @@ func FromAbstract(abstract *AbstractScheme, output interface{}) {
 		log.Fatalf("Output must be a pointer to a struct, got %s", outputValue.Kind())
 	}
 
+	// Get the underlying struct value
 	outputValue = outputValue.Elem()
-	outputType := outputValue.Type()
 
-	// Iterate through fields in the output struct
-	for i := 0; i < outputType.NumField(); i++ {
-		field := outputType.Field(i)
-		tag := field.Tag.Get("abstract") // Look for the 'abstract' tag
-
-		// Skip this field if it doesn't have an "abstract" tag
+	// Use visitFields to iterate through all fields of the output struct
+	visitFields(outputValue, func(field reflect.StructField, fieldValue reflect.Value) {
+		// Get the 'abstract' tag
+		tag := field.Tag.Get("abstract")
 		if tag == "" {
-			log.Printf("Field '%s' does not have an 'abstract' tag in conversion to theme. Skipping.", field.Name)
-			continue
+			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
+			return
 		}
 
+		// Process the field based on its tag
 		// Split the tag into parts (e.g., "AnsiColors.Red")
 		tagParts := strings.Split(tag, ".")
-		abstractField := reflect.ValueOf(abstract).Elem()
+		abstractValue := reflect.ValueOf(abstract).Elem()
 
-		// Traverse through nested fields
+		// Traverse through nested fields in the AbstractScheme
 		for _, part := range tagParts {
-			abstractField = abstractField.FieldByName(part)
-			if !abstractField.IsValid() {
-				log.Printf("Invalid field path '%s' in AbstractScheme for output field '%s'", tag, field.Name)
-				break
+			abstractValue = abstractValue.FieldByName(part)
+			if !abstractValue.IsValid() {
+				log.Printf("Invalid field path '%s' in AbstractScheme for field '%s'.", tag, field.Name)
+				return
 			}
 		}
 
-		// Set value in the output struct if the field path is valid
-		if abstractField.IsValid() && abstractField.CanInterface() {
-			outputField := outputValue.FieldByName(field.Name)
-			if outputField.IsValid() && outputField.CanSet() {
-				outputField.Set(abstractField)
+		// Set value in the output struct if valid
+		if abstractValue.IsValid() && abstractValue.CanInterface() {
+			if fieldValue.CanSet() {
+				fieldValue.Set(abstractValue)
 			} else {
-				log.Printf("Cannot set value for field '%s' in output struct", field.Name)
+				log.Printf("Cannot set value for field '%s' in output struct.", field.Name)
 			}
 		}
-	}
+	})
 }

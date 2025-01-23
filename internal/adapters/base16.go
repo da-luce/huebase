@@ -6,7 +6,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Base16Scheme defines the structure for a Base16 color scheme.
 type Base16Scheme struct {
 	Scheme string `yaml:"scheme" abstract:"Metadata.Name"`
 	Author string `yaml:"author" abstract:"Metadata.Author"`
@@ -28,22 +27,18 @@ type Base16Scheme struct {
 	Base0F Color  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
 }
 
-// FromString converts a Base16 YAML string into an AbstractScheme.
 func (rw Base16Scheme) FromString(input string) (Adapter, error) {
+
 	var base16 Base16Scheme
-	// Unmarshal the YAML input into a Base16Scheme struct
 	err := yaml.Unmarshal([]byte(input), &base16)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal Base16 YAML: %w", err)
 	}
-
-	// Wrap the parsed Base16Scheme in a new Base16Adapter instance
 	return base16, nil
 }
 
-// ToString converts the Base16Adapter's internal Base16Scheme into a YAML string.
 func (adapter Base16Scheme) ToString(input interface{}) (string, error) {
-	// Marshal the input struct into YAML
+
 	data, err := yaml.Marshal(input)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal struct to YAML: %w", err)
