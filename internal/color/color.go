@@ -98,6 +98,7 @@ func trimOctothorpe(hex string) string {
 // UnmarshalYAML allows YAML to deserialize directly into the Color type.
 func (c *Color) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var colorStr string
+
 	if err := unmarshal(&colorStr); err != nil {
 		return err
 	}
