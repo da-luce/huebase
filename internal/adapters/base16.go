@@ -8,24 +8,24 @@ import (
 
 // Base16Scheme defines the structure for a Base16 color scheme.
 type Base16Scheme struct {
-	Scheme string `yaml:"scheme"`
-	Author string `yaml:"author"`
-	Base00 Color  `yaml:"base00"`
-	Base01 Color  `yaml:"base01"`
-	Base02 Color  `yaml:"base02"`
-	Base03 Color  `yaml:"base03"`
-	Base04 Color  `yaml:"base04"`
-	Base05 Color  `yaml:"base05"`
+	Scheme string `yaml:"scheme" abstract:"Metadata.Name"`
+	Author string `yaml:"author" abstract:"Metadata.Author"`
+	Base00 Color  `yaml:"base00" abstract:"SpecialColors.Background"`
+	Base01 Color  `yaml:"base01" abstract:"SpecialColors.Selection"`
+	Base02 Color  `yaml:"base02" abstract:"SpecialColors.Cursor"`
+	Base03 Color  `yaml:"base03" abstract:"SpecialColors.CursorText"`
+	Base04 Color  `yaml:"base04" abstract:"SpecialColors.SelectedText"`
+	Base05 Color  `yaml:"base05" abstract:"SpecialColors.Foreground"`
 	Base06 Color  `yaml:"base06"`
-	Base07 Color  `yaml:"base07"`
-	Base08 Color  `yaml:"base08"`
-	Base09 Color  `yaml:"base09"`
-	Base0A Color  `yaml:"base0A"`
-	Base0B Color  `yaml:"base0B"`
-	Base0C Color  `yaml:"base0C"`
-	Base0D Color  `yaml:"base0D"`
-	Base0E Color  `yaml:"base0E"`
-	Base0F Color  `yaml:"base0F"`
+	Base07 Color  `yaml:"base07" abstract:"AnsiColors.White"`
+	Base08 Color  `yaml:"base08" abstract:"AnsiColors.Red"`
+	Base09 Color  `yaml:"base09" abstract:"AnsiColors.Yellow"`
+	Base0A Color  `yaml:"base0A" abstract:"AnsiColors.Blue"`
+	Base0B Color  `yaml:"base0B" abstract:"AnsiColors.Green"`
+	Base0C Color  `yaml:"base0C" abstract:"AnsiColors.Cyan"`
+	Base0D Color  `yaml:"base0D" abstract:"AnsiColors.BrightBlue"`
+	Base0E Color  `yaml:"base0E" abstract:"AnsiColors.Magenta"`
+	Base0F Color  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
 }
 
 // FromString converts a Base16 YAML string into an AbstractScheme.
@@ -36,41 +36,9 @@ func (rw Base16Adapter) FromString(input string) (AbstractScheme, error) {
 		// Include a prefix with context and truncate input for readability if it's long
 		return AbstractScheme{}, fmt.Errorf("failed to unmarshal Base16 YAML. Input: %.100s... Error: %w", input, err)
 	}
+	var abstract AbstractScheme
+	PopulateAbstractScheme(base16, &abstract)
 
-	abstract := AbstractScheme{
-		AnsiColors: AnsiColors{
-			Black:         base16.Base00,
-			Red:           base16.Base08,
-			Green:         base16.Base0B,
-			Yellow:        base16.Base0A,
-			Blue:          base16.Base0D,
-			Magenta:       base16.Base0E,
-			Cyan:          base16.Base0C,
-			White:         base16.Base05,
-			BrightBlack:   base16.Base03,
-			BrightRed:     base16.Base09,
-			BrightGreen:   base16.Base0B,
-			BrightYellow:  base16.Base0A,
-			BrightBlue:    base16.Base0D,
-			BrightMagenta: base16.Base0E,
-			BrightCyan:    base16.Base0C,
-			BrightWhite:   base16.Base07,
-		},
-		SpecialColors: SpecialColors{
-			Foreground:   base16.Base05,
-			Background:   base16.Base00,
-			Cursor:       base16.Base05,
-			CursorText:   base16.Base00,
-			Selection:    base16.Base02,
-			SelectedText: base16.Base05,
-			Links:        base16.Base0D,
-			FindMatch:    base16.Base09,
-		},
-		Metadata: Meta{
-			Name:   base16.Scheme,
-			Author: base16.Author,
-		},
-	}
 	return abstract, nil
 }
 

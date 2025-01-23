@@ -1,6 +1,12 @@
 package adapters
 
-import "github.com/da-luce/huebase/internal/color"
+import (
+	"log"
+	"reflect"
+	"strings"
+
+	"github.com/da-luce/huebase/internal/color"
+)
 
 // Reader interface for reading themes
 type Reader interface {
@@ -59,4 +65,47 @@ type AbstractScheme struct {
 	AnsiColors    AnsiColors
 	SpecialColors SpecialColors
 	Metadata      Meta
+}
+
+func PopulateAbstractScheme(input interface{}, abstract *AbstractScheme) {
+	inputValue := reflect.ValueOf(input)
+	inputType := inputValue.Type()
+
+	if inputType.Kind() != reflect.Struct {
+		log.Fatalf("Input must be a struct, got %s", inputType.Kind())
+	}
+
+	abstractValue := reflect.ValueOf(abstract).Elem()
+
+	// Iterate through fields in the input struct
+	for i := 0; i < inputType.NumField(); i++ {
+		field := inputType.Field(i)
+		tag := field.Tag.Get("abstract") // Look for the 'abstract' tag
+
+		// Skip this field if it doesn't have an "abstract" tag
+		if tag == "" {
+			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
+			continue
+		}
+
+		// Split the tag into parts (e.g., "AnsiColors.Red")
+		tagParts := strings.Split(tag, ".")
+		abstractField := abstractValue
+
+		// Traverse through nested fields
+		for _, part := range tagParts {
+			abstractField = abstractField.FieldByName(part)
+			if !abstractField.IsValid() {
+				log.Printf("Invalid field path '%s' in AbstractScheme for input field '%s'", tag, field.Name)
+				break
+			}
+		}
+
+		// Set value if the field path is valid
+		if abstractField.IsValid() && abstractField.CanSet() {
+			abstractField.Set(inputValue.Field(i))
+		} else if abstractField.IsValid() {
+			log.Printf("Cannot set value for '%s' in AbstractScheme", tag)
+		}
+	}
 }
