@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/da-luce/huebase/internal/color"
+	"github.com/da-luce/huebase/internal/option"
 )
 
 type Adapter interface {
@@ -17,42 +18,44 @@ type Adapter interface {
 // TODO: add nil or Color
 // AnsiColors represents the ANSI color palette.
 type Color = color.Color
+type OptColor = option.Option[Color]
+type OptString = option.Option[string]
 type AnsiColors struct {
-	Black         Color
-	Red           Color
-	Green         Color
-	Yellow        Color
-	Blue          Color
-	Magenta       Color
-	Cyan          Color
-	White         Color
-	BrightBlack   Color
-	BrightRed     Color
-	BrightGreen   Color
-	BrightYellow  Color
-	BrightBlue    Color
-	BrightMagenta Color
-	BrightCyan    Color
-	BrightWhite   Color
+	Black         OptColor
+	Red           OptColor
+	Green         OptColor
+	Yellow        OptColor
+	Blue          OptColor
+	Magenta       OptColor
+	Cyan          OptColor
+	White         OptColor
+	BrightBlack   OptColor
+	BrightRed     OptColor
+	BrightGreen   OptColor
+	BrightYellow  OptColor
+	BrightBlue    OptColor
+	BrightMagenta OptColor
+	BrightCyan    OptColor
+	BrightWhite   OptColor
 }
 
 // SpecialColors represents special colors used in themes.
 type SpecialColors struct {
-	Foreground       Color
-	ForegroundBright Color
-	Background       Color
-	Cursor           Color
-	CursorText       Color
-	Selection        Color
-	SelectedText     Color
-	Links            Color
-	FindMatch        Color
+	Foreground       OptColor
+	ForegroundBright OptColor
+	Background       OptColor
+	Cursor           OptColor
+	CursorText       OptColor
+	Selection        OptColor
+	SelectedText     OptColor
+	Links            OptColor
+	FindMatch        OptColor
 }
 
 // Meta contains metadata about the theme.
 type Meta struct {
-	Name   string
-	Author string
+	Name   OptString
+	Author OptString
 }
 
 // AbstractTheme represents the most generic theme possible
@@ -71,18 +74,18 @@ type AbstractScheme struct {
 // Returns:
 //   - AbstractScheme with mapped values.
 //   - An error if the input is invalid or mapping fails.
-func ToAbstract(input Adapter) (AbstractScheme, error) {
+func ToAbstract(adapter Adapter) (AbstractScheme, error) {
 	// Use reflection to inspect the input struct
-	inputValue := reflect.ValueOf(input)
+	adapterStruct := reflect.ValueOf(adapter)
 
 	// If the input is a pointer, dereference it
-	if inputValue.Kind() == reflect.Ptr {
-		inputValue = inputValue.Elem()
+	if adapterStruct.Kind() == reflect.Ptr {
+		adapterStruct = adapterStruct.Elem()
 	}
 
 	// Ensure input is now a struct
-	if inputValue.Kind() != reflect.Struct {
-		return AbstractScheme{}, fmt.Errorf("input must be a struct or a pointer to a struct, got %s", inputValue.Kind())
+	if adapterStruct.Kind() != reflect.Struct {
+		return AbstractScheme{}, fmt.Errorf("input must be a struct or a pointer to a struct, got %s", adapterStruct.Kind())
 	}
 
 	// Create a new AbstractScheme instance
@@ -90,7 +93,7 @@ func ToAbstract(input Adapter) (AbstractScheme, error) {
 	abstractValue := reflect.ValueOf(&abstract).Elem() // Dereference the pointer to AbstractScheme
 
 	// Use visitFields to iterate over input fields
-	traverseFields(inputValue, func(field reflect.StructField, fieldValue reflect.Value) {
+	traverseFields(adapterStruct, func(field reflect.StructField, fieldValue reflect.Value) {
 		// Get the 'abstract' tag
 		tag := field.Tag.Get("abstract")
 		if tag == "" {
@@ -183,7 +186,11 @@ func isBaseType(t reflect.Type) bool {
 		// Check if the pointer points to a base type
 		return isBaseType(t.Elem())
 	default:
+
 		if t.Name() == "Color" {
+			return true
+		}
+		if strings.HasPrefix(t.Name(), "Option") {
 			return true
 		}
 		return false
@@ -242,4 +249,28 @@ func FromAbstract(abstract *AbstractScheme, output Adapter) {
 			}
 		}
 	})
+}
+
+// CountNonNoneFields counts the number of non-None fields in an AbstractScheme.
+//
+// Parameters:
+//   - abstract: The AbstractScheme to analyze.
+//
+// Returns:
+//   - An integer representing the count of fields that are not None.
+func CountNonNoneFields(abstract AbstractScheme) int {
+	count := 0
+
+	// Traverse all fields in the AbstractScheme
+	traverseFields(reflect.ValueOf(abstract), func(field reflect.StructField, fieldValue reflect.Value) {
+		// Check if the field is an Option type
+		if strings.HasPrefix(fieldValue.Type().Name(), "Option") {
+			// Check if the isSet field in the Option struct is true
+			if fieldValue.FieldByName("isSet").Bool() {
+				count++
+			}
+		}
+	})
+
+	return count
 }

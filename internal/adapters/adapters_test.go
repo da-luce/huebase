@@ -32,7 +32,7 @@ func TestAdapters(t *testing.T) {
 	// Run the tests for each scheme
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			// Test loadTheme
+
 			t.Run("LoadTheme", func(t *testing.T) {
 				err := loadTheme(test.scheme, test.filepath)
 				if err != nil {
@@ -40,7 +40,6 @@ func TestAdapters(t *testing.T) {
 				}
 			})
 
-			// Test saveTheme using a fake buffer
 			t.Run("SaveTheme", func(t *testing.T) {
 				buffer := &bytes.Buffer{}
 				err := saveTheme(test.scheme, buffer)
@@ -52,9 +51,12 @@ func TestAdapters(t *testing.T) {
 				}
 			})
 
-			// Run inversePropertyTest
 			t.Run("InversePropertyTest", func(t *testing.T) {
 				inversePropertyTest(t, test.filepath, test.scheme)
+			})
+
+			t.Run("NonNoneFields", func(t *testing.T) {
+				nonNoneFieldsTest(t, test.filepath, test.scheme)
 			})
 		})
 	}
@@ -131,4 +133,21 @@ func inversePropertyTest(t *testing.T, filepath string, scheme Adapter) {
 	// Ensure the original and reconstructed schemes are deeply equal
 	assert.True(t, reflect.DeepEqual(scheme, newScheme),
 		"The original scheme and the reconstructed scheme should match")
+}
+
+func nonNoneFieldsTest(t *testing.T, filepath string, scheme Adapter) {
+
+	// Load the theme into the adapter
+	err := loadTheme(scheme, filepath)
+	assert.NoError(t, err, "loadTheme should not produce an error")
+
+	// Convert the scheme to AbstractScheme
+	abstract, err := ToAbstract(scheme)
+	assert.NoError(t, err, "ToAbstract should not produce an error")
+	t.Logf("Abstract theme: %+v", abstract)
+	// Count non-None fields
+	nonNoneCount := CountNonNoneFields(abstract)
+
+	// Assert that there are at least 8 non-None fields
+	assert.GreaterOrEqual(t, nonNoneCount, 8, "Expected at least 8 non-None fields in the abstract theme")
 }

@@ -1,6 +1,10 @@
-# HueBase
+# 🎨 HueBase
 
-A CLI app and library designed to enhance the generation and creation of color schemes across a diverse range of applications. Ultimately, I want to add a website that hosts the locations of popular themes for various tools...think [Repology](https://repology.org/) but for themes!
+A CLI app and library designed to enhance the generation and creation of color schemes across a diverse range of applications. Three goals:
+
+* CLI tool to view and convert colorschemes for terminals, IDEs, etc.
+* A library of popular colorschemes across various tools (think [Repology](https://repology.org/) but for themes!)
+* An OS level tool to manage theme profiles concurrently between apps
 
 ## Why?
 

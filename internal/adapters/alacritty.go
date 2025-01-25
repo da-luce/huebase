@@ -8,44 +8,44 @@ import (
 
 // Primary colors
 type Primary struct {
-	Background Color `toml:"background" abstract:"SpecialColors.Background"`
-	Foreground Color `toml:"foreground" abstract:"SpecialColors.Foreground"`
+	Background OptColor `toml:"background" abstract:"SpecialColors.Background"`
+	Foreground OptColor `toml:"foreground" abstract:"SpecialColors.Foreground"`
 }
 
 // Cursor colors
 type Cursor struct {
-	Cursor Color `toml:"cursor" abstract:"SpecialColors.Cursor"`
-	Text   Color `toml:"text" abstract:"SpecialColors.CursorText"`
+	Cursor OptColor `toml:"cursor" abstract:"SpecialColors.Cursor"`
+	Text   OptColor `toml:"text" abstract:"SpecialColors.CursorText"`
 }
 
 // Normal ANSI colors
 type Normal struct {
-	Black   Color `toml:"black" abstract:"AnsiColors.Black"`
-	Blue    Color `toml:"blue" abstract:"AnsiColors.Blue"`
-	Cyan    Color `toml:"cyan" abstract:"AnsiColors.Cyan"`
-	Green   Color `toml:"green" abstract:"AnsiColors.Green"`
-	Magenta Color `toml:"magenta" abstract:"AnsiColors.Magenta"`
-	Red     Color `toml:"red" abstract:"AnsiColors.Red"`
-	White   Color `toml:"white" abstract:"AnsiColors.White"`
-	Yellow  Color `toml:"yellow" abstract:"AnsiColors.Yellow"`
+	Black   OptColor `toml:"black" abstract:"AnsiColors.Black"`
+	Blue    OptColor `toml:"blue" abstract:"AnsiColors.Blue"`
+	Cyan    OptColor `toml:"cyan" abstract:"AnsiColors.Cyan"`
+	Green   OptColor `toml:"green" abstract:"AnsiColors.Green"`
+	Magenta OptColor `toml:"magenta" abstract:"AnsiColors.Magenta"`
+	Red     OptColor `toml:"red" abstract:"AnsiColors.Red"`
+	White   OptColor `toml:"white" abstract:"AnsiColors.White"`
+	Yellow  OptColor `toml:"yellow" abstract:"AnsiColors.Yellow"`
 }
 
 // Bright ANSI colors
 type Bright struct {
-	Black   Color `toml:"black" abstract:"AnsiColors.BrightBlack"`
-	Blue    Color `toml:"blue" abstract:"AnsiColors.BrightBlue"`
-	Cyan    Color `toml:"cyan" abstract:"AnsiColors.BrightCyan"`
-	Green   Color `toml:"green" abstract:"AnsiColors.BrightGreen"`
-	Magenta Color `toml:"magenta" abstract:"AnsiColors.BrightMagenta"`
-	Red     Color `toml:"red" abstract:"AnsiColors.BrightRed"`
-	White   Color `toml:"white" abstract:"AnsiColors.BrightWhite"`
-	Yellow  Color `toml:"yellow" abstract:"AnsiColors.BrightYellow"`
+	Black   OptColor `toml:"black" abstract:"AnsiColors.BrightBlack"`
+	Blue    OptColor `toml:"blue" abstract:"AnsiColors.BrightBlue"`
+	Cyan    OptColor `toml:"cyan" abstract:"AnsiColors.BrightCyan"`
+	Green   OptColor `toml:"green" abstract:"AnsiColors.BrightGreen"`
+	Magenta OptColor `toml:"magenta" abstract:"AnsiColors.BrightMagenta"`
+	Red     OptColor `toml:"red" abstract:"AnsiColors.BrightRed"`
+	White   OptColor `toml:"white" abstract:"AnsiColors.BrightWhite"`
+	Yellow  OptColor `toml:"yellow" abstract:"AnsiColors.BrightYellow"`
 }
 
 // Selection colors
 type Selection struct {
-	Background Color `toml:"background" abstract:"SpecialColors.Selection"`
-	Text       Color `toml:"text" abstract:"SpecialColors.SelectedText"`
+	Background OptColor `toml:"background" abstract:"SpecialColors.Selection"`
+	Text       OptColor `toml:"text" abstract:"SpecialColors.SelectedText"`
 }
 
 // Colors struct
