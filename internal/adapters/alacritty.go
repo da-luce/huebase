@@ -3,7 +3,7 @@ package adapters
 import (
 	"fmt"
 
-	"github.com/pelletier/go-toml"
+	"github.com/pelletier/go-toml/v2"
 )
 
 // Primary colors
@@ -64,8 +64,9 @@ type AlacrittyScheme struct {
 
 func (a *AlacrittyScheme) FromString(input string) error {
 	// Unmarshal the input TOML string into the AlacrittyScheme struct
-	if err := toml.Unmarshal([]byte(input), a); err != nil {
-		return fmt.Errorf("failed to unmarshal TOML: %w", err)
+	err := toml.Unmarshal([]byte(input), a)
+	if err != nil {
+
 	}
 	return nil
 }

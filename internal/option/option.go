@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/naoina/toml"
 	"gopkg.in/yaml.v3"
 )
 
@@ -89,6 +88,7 @@ func (o *Option[T]) UnmarshalJSON(data []byte) error {
 
 // UnmarshalYAML recursively unmarshals YAML into the Option.
 func (o *Option[T]) UnmarshalYAML(node *yaml.Node) error {
+
 	// Handle null nodes as None
 	if node.Tag == "!!null" {
 		o.isSet = false
@@ -106,33 +106,34 @@ func (o *Option[T]) UnmarshalYAML(node *yaml.Node) error {
 	return nil
 }
 
-// UnmarshalTOML recursively unmarshals TOML into the Option.
-func (o *Option[T]) UnmarshalTOML(data interface{}) error {
-	// Handle nil as None
-	if data == nil {
+func (o *Option[T]) UnmarshalText(data []byte) error {
+
+	if string(data) == "null" {
 		o.isSet = false
+
 		return nil
 	}
+	// Create a new instance of T
+	var value T
 
-	var bytes []byte
-
-	// FIXME: This is so gross!
-	switch v := data.(type) {
-	case []byte:
-		bytes = v
-	case string:
-		bytes = []byte(v)
-	default:
-		return fmt.Errorf("type mismatch: expected []byte or string, got %T", data)
+	// Check if T implements the UnmarshalText interface
+	if unmarshaler, ok := any(&value).(interface{ UnmarshalText([]byte) error }); ok {
+		if err := unmarshaler.UnmarshalText(data); err != nil {
+			return fmt.Errorf("failed to unmarshal text into Option[%T]: %w", value, err)
+		}
+	} else {
+		// Fallback: Try to unmarshal as JSON or raw string
+		fmt.Println("T does not implement UnmarshalText; falling back...")
+		if err := json.Unmarshal(data, &value); err != nil {
+			return fmt.Errorf("failed to unmarshal text into Option[%T]: %w", value, err)
+		}
 	}
 
-	// Unmarshal TOML data into the value
-	if err := toml.Unmarshal(bytes, &o.value); err != nil {
-		return fmt.Errorf("failed to unmarshal TOML data: %w", err)
-	}
-
-	// Mark as set if unmarshaling succeeded
+	// Set the value and mark as set
+	o.value = value
 	o.isSet = true
+
+	fmt.Printf("Unmarshaled value: %+v\n", o.value)
 	return nil
 }
 

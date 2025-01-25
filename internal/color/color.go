@@ -45,6 +45,7 @@ func (c Color) ToHex(octothorpe bool) string {
 
 // FromHex creates a Color instance from a hexadecimal string.
 func FromHex(hex string) (Color, error) {
+
 	hex = trimOctothorpe(hex)
 	if len(hex) != 6 {
 		return Color{}, fmt.Errorf("hex color must be 6 characters long: %s", hex)
@@ -97,6 +98,7 @@ func trimOctothorpe(hex string) string {
 
 // UnmarshalYAML allows YAML to deserialize directly into the Color type.
 func (c *Color) UnmarshalYAML(unmarshal func(interface{}) error) error {
+
 	var colorStr string
 
 	if err := unmarshal(&colorStr); err != nil {
@@ -117,11 +119,23 @@ func (c Color) MarshalYAML() (interface{}, error) {
 
 // UnmarshalTOML allows TOML to deserialize directly into the Color type.
 func (c *Color) UnmarshalTOML(data interface{}) error {
+
 	colorStr, ok := data.(string)
+
 	if !ok {
-		return fmt.Errorf("invalid color format, expected string")
+		return fmt.Errorf("invalid color format: expected a string, got %T (value: %v)", data, data)
 	}
 	color, err := FromHex(colorStr)
+	if err != nil {
+		return err
+	}
+	*c = color
+	return nil
+}
+
+func (c *Color) UnmarshalText(text []byte) error {
+
+	color, err := FromHex(string(text))
 	if err != nil {
 		return err
 	}

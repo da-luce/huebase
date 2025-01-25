@@ -152,7 +152,7 @@ func traverseFields(value reflect.Value, visitFunc func(field reflect.StructFiel
 		fieldValue := value.Field(i)
 
 		// Do not recurse further on Color structs and the like
-		if isBaseType(field.Type) {
+		if isBaseType(field.Type) || isOption(field) {
 			visitFunc(field, fieldValue)
 			continue
 		}
@@ -251,6 +251,16 @@ func FromAbstract(abstract *AbstractScheme, output Adapter) {
 	})
 }
 
+func isOption(x interface{}) bool {
+	// FIXME: this is gross
+	if x == nil {
+		return false
+	}
+
+	typ := reflect.TypeOf(x)
+	return strings.HasPrefix(typ.Name(), "Option")
+}
+
 // CountNonNoneFields counts the number of non-None fields in an AbstractScheme.
 //
 // Parameters:
@@ -264,7 +274,7 @@ func CountNonNoneFields(abstract AbstractScheme) int {
 	// Traverse all fields in the AbstractScheme
 	traverseFields(reflect.ValueOf(abstract), func(field reflect.StructField, fieldValue reflect.Value) {
 		// Check if the field is an Option type
-		if strings.HasPrefix(fieldValue.Type().Name(), "Option") {
+		if isOption(fieldValue.Interface()) {
 			// Check if the isSet field in the Option struct is true
 			if fieldValue.FieldByName("isSet").Bool() {
 				count++
