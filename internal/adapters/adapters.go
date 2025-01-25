@@ -10,10 +10,11 @@ import (
 )
 
 type Adapter interface {
-	ToString(input interface{}) (string, error)
-	FromString(input string) (Adapter, error)
+	ToString() (string, error)
+	FromString(input string) error
 }
 
+// TODO: add nil or Color
 // AnsiColors represents the ANSI color palette.
 type Color = color.Color
 type AnsiColors struct {
@@ -37,14 +38,15 @@ type AnsiColors struct {
 
 // SpecialColors represents special colors used in themes.
 type SpecialColors struct {
-	Foreground   Color
-	Background   Color
-	Cursor       Color
-	CursorText   Color
-	Selection    Color
-	SelectedText Color
-	Links        Color
-	FindMatch    Color
+	Foreground       Color
+	ForegroundBright Color
+	Background       Color
+	Cursor           Color
+	CursorText       Color
+	Selection        Color
+	SelectedText     Color
+	Links            Color
+	FindMatch        Color
 }
 
 // Meta contains metadata about the theme.
@@ -60,50 +62,58 @@ type AbstractScheme struct {
 	Metadata      Meta
 }
 
-func ToAbstract(input interface{}) (*AbstractScheme, error) {
+func ToAbstract(input Adapter) (AbstractScheme, error) {
+	// Use reflection to inspect the input struct
 	inputValue := reflect.ValueOf(input)
-	inputType := inputValue.Type()
 
-	// Ensure input is a struct
-	if inputType.Kind() != reflect.Struct {
-		return nil, fmt.Errorf("input must be a struct, got %s", inputType.Kind())
+	// If the input is a pointer, dereference it
+	if inputValue.Kind() == reflect.Ptr {
+		inputValue = inputValue.Elem()
 	}
 
-	// Create a new AbstractScheme and use a pointer to it
-	abstract := &AbstractScheme{}
-	abstractValue := reflect.ValueOf(abstract).Elem()
+	// Ensure input is now a struct
+	if inputValue.Kind() != reflect.Struct {
+		return AbstractScheme{}, fmt.Errorf("input must be a struct or a pointer to a struct, got %s", inputValue.Kind())
+	}
 
-	// Iterate through fields in the input struct
-	for i := 0; i < inputType.NumField(); i++ {
-		field := inputType.Field(i)
+	// Create a new AbstractScheme instance
+	abstract := AbstractScheme{}
+	abstractValue := reflect.ValueOf(&abstract).Elem() // Dereference the pointer to AbstractScheme
+
+	// Use visitFields to iterate over input fields
+	visitFields(inputValue, func(field reflect.StructField, fieldValue reflect.Value) {
 		tag := field.Tag.Get("abstract") // Look for the 'abstract' tag
 
 		// Skip this field if it doesn't have an "abstract" tag
 		if tag == "" {
-			log.Printf("Field '%s' does not have an 'abstract' tag in conversion to abstract theme. Skipping.", field.Name)
-			continue
+			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
+			return
 		}
 
 		// Split the tag into parts (e.g., "AnsiColors.Red")
 		tagParts := strings.Split(tag, ".")
-		abstractField := abstractValue
+		currentField := abstractValue
 
-		// Traverse through nested fields
-		for _, part := range tagParts {
-			abstractField = abstractField.FieldByName(part)
-			if !abstractField.IsValid() {
-				log.Printf("Invalid field path '%s' in AbstractScheme for input field '%s'", tag, field.Name)
-				break
+		// Traverse through nested fields in AbstractScheme
+		for i, part := range tagParts {
+			currentField = currentField.FieldByName(part)
+
+			// Handle invalid field paths
+			if !currentField.IsValid() {
+				log.Printf("Invalid field path '%s' in AbstractScheme for input field '%s' at part '%s'. Skipping.", tag, field.Name, part)
+				return
+			}
+
+			// If we're at the last part of the tag, set the value
+			if i == len(tagParts)-1 {
+				if currentField.CanSet() {
+					currentField.Set(fieldValue)
+				} else {
+					log.Printf("Cannot set value for '%s' in AbstractScheme. Field is not settable.", tag)
+				}
 			}
 		}
-
-		// Set value if the field path is valid
-		if abstractField.IsValid() && abstractField.CanSet() {
-			abstractField.Set(inputValue.Field(i))
-		} else if abstractField.IsValid() {
-			log.Printf("Cannot set value for '%s' in AbstractScheme", tag)
-		}
-	}
+	})
 
 	return abstract, nil
 }
@@ -156,7 +166,7 @@ func isBaseType(t reflect.Type) bool {
 	}
 }
 
-func FromAbstract(abstract *AbstractScheme, output interface{}) {
+func FromAbstract(abstract *AbstractScheme, output Adapter) {
 	// Ensure `abstract` is not nil
 	if abstract == nil {
 		log.Println("Error: AbstractScheme is nil. Cannot populate fields.")
@@ -179,6 +189,7 @@ func FromAbstract(abstract *AbstractScheme, output interface{}) {
 			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
 			return
 		}
+		fmt.Println("Field Name:", field.Name)
 
 		// Process the field based on its tag
 		// Split the tag into parts (e.g., "AnsiColors.Red")

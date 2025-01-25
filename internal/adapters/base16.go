@@ -15,7 +15,7 @@ type Base16Scheme struct {
 	Base03 Color  `yaml:"base03" abstract:"SpecialColors.CursorText"`
 	Base04 Color  `yaml:"base04" abstract:"SpecialColors.SelectedText"`
 	Base05 Color  `yaml:"base05" abstract:"SpecialColors.Foreground"`
-	Base06 Color  `yaml:"base06"`
+	Base06 Color  `yaml:"base06" abstract:"SpecialColors.ForegroundBright"`
 	Base07 Color  `yaml:"base07" abstract:"AnsiColors.White"`
 	Base08 Color  `yaml:"base08" abstract:"AnsiColors.Red"`
 	Base09 Color  `yaml:"base09" abstract:"AnsiColors.Yellow"`
@@ -27,19 +27,18 @@ type Base16Scheme struct {
 	Base0F Color  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
 }
 
-func (rw Base16Scheme) FromString(input string) (Adapter, error) {
-
-	var base16 Base16Scheme
-	err := yaml.Unmarshal([]byte(input), &base16)
+func (rw *Base16Scheme) FromString(input string) error {
+	// Unmarshal the input YAML string into the Base16Scheme struct
+	err := yaml.Unmarshal([]byte(input), rw)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal Base16 YAML: %w", err)
+		return fmt.Errorf("failed to unmarshal Base16 YAML: %w", err)
 	}
-	return base16, nil
+	return nil
 }
 
-func (adapter Base16Scheme) ToString(input interface{}) (string, error) {
-
-	data, err := yaml.Marshal(input)
+func (rw *Base16Scheme) ToString() (string, error) {
+	// Marshal the Base16Scheme struct to a YAML string
+	data, err := yaml.Marshal(rw)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal struct to YAML: %w", err)
 	}

@@ -62,17 +62,17 @@ type AlacrittyScheme struct {
 	Colors Colors `toml:"colors"`
 }
 
-func (a AlacrittyScheme) FromString(input string) (Adapter, error) {
-	var scheme AlacrittyScheme
-	if err := toml.Unmarshal([]byte(input), &scheme); err != nil {
-		return nil, err
+func (a *AlacrittyScheme) FromString(input string) error {
+	// Unmarshal the input TOML string into the AlacrittyScheme struct
+	if err := toml.Unmarshal([]byte(input), a); err != nil {
+		return fmt.Errorf("failed to unmarshal TOML: %w", err)
 	}
-	return &scheme, nil
+	return nil
 }
 
-func (scheme AlacrittyScheme) ToString(input interface{}) (string, error) {
-	// Marshal the input struct into TOML
-	data, err := toml.Marshal(input)
+func (a *AlacrittyScheme) ToString() (string, error) {
+	// Marshal the AlacrittyScheme struct into a TOML string
+	data, err := toml.Marshal(a)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal struct to TOML: %w", err)
 	}

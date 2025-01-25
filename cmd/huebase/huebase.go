@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"reflect"
 
 	"github.com/da-luce/huebase/internal/adapters"
 )
@@ -34,30 +33,26 @@ func convertTheme(inputFile string, inputFormat string, outputFormat string) (st
 		return "", fmt.Errorf("failed to read input file: %v", err)
 	}
 
-	// Convert to struct
-	inputStruct, err := inputReader.FromString(string(inputData))
-	if err != nil {
+	// Convert to struct (populate inputReader directly)
+	if err := inputReader.FromString(string(inputData)); err != nil {
 		return "", fmt.Errorf("failed to parse input file: %v", err)
 	}
 
 	// Convert to AbstractTheme
-	abstractTheme, err := adapters.ToAbstract(inputStruct)
+	abstractTheme, err := adapters.ToAbstract(inputReader)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse input file: %v", err)
+		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
 	}
 
-	// Create an instance of the output struct
-	outputStructType := reflect.TypeOf(outputWriter).Elem()
-	outputStruct := reflect.New(outputStructType).Interface()
-
 	// Convert AbstractTheme to output format
-	adapters.FromAbstract(abstractTheme, outputStruct)
+	adapters.FromAbstract(&abstractTheme, outputWriter)
 
 	// Convert output to string
-	outputData, err := outputWriter.ToString(outputStruct)
+	outputData, err := outputWriter.ToString()
 	if err != nil {
 		return "", fmt.Errorf("failed to convert theme to output format: %v", err)
 	}
+
 	return outputData, nil
 }
 
