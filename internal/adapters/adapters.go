@@ -55,13 +55,22 @@ type Meta struct {
 	Author string
 }
 
-// AbstractTheme represents a theme with ANSI colors, special colors, and metadata.
+// AbstractTheme represents the most generic theme possible
 type AbstractScheme struct {
 	AnsiColors    AnsiColors
 	SpecialColors SpecialColors
 	Metadata      Meta
 }
 
+// ToAbstract converts an Adapter interface implementation into an AbstractScheme.
+// Fields are mapped based on "abstract" tags in the concrete struct.
+//
+// Parameters:
+//   - input: An implementation of the Adapter interface.
+//
+// Returns:
+//   - AbstractScheme with mapped values.
+//   - An error if the input is invalid or mapping fails.
 func ToAbstract(input Adapter) (AbstractScheme, error) {
 	// Use reflection to inspect the input struct
 	inputValue := reflect.ValueOf(input)
@@ -81,10 +90,9 @@ func ToAbstract(input Adapter) (AbstractScheme, error) {
 	abstractValue := reflect.ValueOf(&abstract).Elem() // Dereference the pointer to AbstractScheme
 
 	// Use visitFields to iterate over input fields
-	visitFields(inputValue, func(field reflect.StructField, fieldValue reflect.Value) {
-		tag := field.Tag.Get("abstract") // Look for the 'abstract' tag
-
-		// Skip this field if it doesn't have an "abstract" tag
+	traverseFields(inputValue, func(field reflect.StructField, fieldValue reflect.Value) {
+		// Get the 'abstract' tag
+		tag := field.Tag.Get("abstract")
 		if tag == "" {
 			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
 			return
@@ -118,7 +126,15 @@ func ToAbstract(input Adapter) (AbstractScheme, error) {
 	return abstract, nil
 }
 
-func visitFields(value reflect.Value, visitFunc func(field reflect.StructField, value reflect.Value)) {
+// traverseFields iterates over all fields in a struct or a pointer to a struct.
+// If the input is a pointer, it is dereferenced automatically.
+//
+// Parameters:
+//   - value: A reflect.Value of a struct or a pointer to a struct.
+//   - visitFunc: A function called for each field, receiving the field's metadata
+//     (reflect.StructField) and value (reflect.Value).
+func traverseFields(value reflect.Value, visitFunc func(field reflect.StructField, value reflect.Value)) {
+
 	// Ensure the value is a struct or a pointer to a struct
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
@@ -143,13 +159,22 @@ func visitFields(value reflect.Value, visitFunc func(field reflect.StructField, 
 
 		// Recursively visit nested structs
 		if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() && fieldValue.Elem().Kind() == reflect.Struct {
-			visitFields(fieldValue, visitFunc)
+			traverseFields(fieldValue, visitFunc)
 		} else if fieldValue.Kind() == reflect.Struct {
-			visitFields(fieldValue, visitFunc)
+			traverseFields(fieldValue, visitFunc)
 		}
 	}
 }
 
+// isBaseType determines if a reflect.Type is a base type that should not be further traversed.
+// Base types are used to set fields directly when mapping with "abstract" tags.
+//
+// Parameters:
+//   - t: The reflect.Type to check.
+//
+// Returns:
+//   - true if the type is a base type (e.g., int, string, etc.).
+//   - false if the type is a struct or another complex type that can be traversed.
 func isBaseType(t reflect.Type) bool {
 	switch t.Kind() {
 	case reflect.String, reflect.Int, reflect.Int64, reflect.Float64, reflect.Bool:
@@ -158,7 +183,6 @@ func isBaseType(t reflect.Type) bool {
 		// Check if the pointer points to a base type
 		return isBaseType(t.Elem())
 	default:
-		// Add custom types (like Color) if necessary
 		if t.Name() == "Color" {
 			return true
 		}
@@ -166,6 +190,12 @@ func isBaseType(t reflect.Type) bool {
 	}
 }
 
+// FromAbstract populates an Adapter implementation with values from an AbstractScheme.
+// Fields in the Adapter are set based on "abstract" tags in the concrete struct.
+//
+// Parameters:
+//   - abstract: A pointer to the AbstractScheme containing source data.
+//   - output: An implementation of the Adapter interface to be populated.
 func FromAbstract(abstract *AbstractScheme, output Adapter) {
 	// Ensure `abstract` is not nil
 	if abstract == nil {
@@ -182,16 +212,14 @@ func FromAbstract(abstract *AbstractScheme, output Adapter) {
 	outputValue = outputValue.Elem()
 
 	// Use visitFields to iterate through all fields of the output struct
-	visitFields(outputValue, func(field reflect.StructField, fieldValue reflect.Value) {
+	traverseFields(outputValue, func(field reflect.StructField, fieldValue reflect.Value) {
 		// Get the 'abstract' tag
 		tag := field.Tag.Get("abstract")
 		if tag == "" {
 			log.Printf("Field '%s' does not have an 'abstract' tag. Skipping.", field.Name)
 			return
 		}
-		fmt.Println("Field Name:", field.Name)
 
-		// Process the field based on its tag
 		// Split the tag into parts (e.g., "AnsiColors.Red")
 		tagParts := strings.Split(tag, ".")
 		abstractValue := reflect.ValueOf(abstract).Elem()
