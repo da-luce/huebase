@@ -18,14 +18,19 @@ func TestAdapters(t *testing.T) {
 		scheme   Adapter
 	}{
 		{
-			name:     "Base16Scheme",
+			name:     "Base16",
 			filepath: "../../themes/base16.yaml",
 			scheme:   &Base16Scheme{},
 		},
 		{
-			name:     "AlacrittyScheme",
+			name:     "Alacritty ",
 			filepath: "../../themes/alacritty.toml",
 			scheme:   &AlacrittyScheme{},
+		},
+		{
+			name:     "Windows Terminal",
+			filepath: "../../themes/wt.json",
+			scheme:   &WindowsTerminalScheme{},
 		},
 	}
 
@@ -119,16 +124,11 @@ func inversePropertyTest(t *testing.T, filepath string, scheme Adapter) {
 	abstract, err := ToAbstract(scheme)
 	assert.NoError(t, err, "ToAbstract should not produce an error")
 
-	t.Logf("Abstract Theme: %+v", abstract)
-
 	// Create a new instance of the same type as the input scheme
 	newScheme := reflect.New(reflect.TypeOf(scheme).Elem()).Interface().(Adapter)
 
 	// Convert back from AbstractScheme to the original scheme
 	FromAbstract(&abstract, newScheme)
-
-	t.Logf("Original Scheme: %+v", scheme)
-	t.Logf("Reconstructed Scheme: %+v", newScheme)
 
 	// Ensure the original and reconstructed schemes are deeply equal
 	assert.True(t, reflect.DeepEqual(scheme, newScheme),
@@ -144,7 +144,7 @@ func nonNoneFieldsTest(t *testing.T, filepath string, scheme Adapter) {
 	// Convert the scheme to AbstractScheme
 	abstract, err := ToAbstract(scheme)
 	assert.NoError(t, err, "ToAbstract should not produce an error")
-	t.Logf("Abstract theme: %+v", abstract)
+
 	// Count non-None fields
 	nonNoneCount := CountNonNoneFields(abstract)
 

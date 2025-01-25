@@ -1,24 +1,19 @@
 package adapters
 
 import (
-	"fmt"
-
 	"github.com/pelletier/go-toml/v2"
 )
 
-// Primary colors
 type Primary struct {
 	Background OptColor `toml:"background" abstract:"SpecialColors.Background"`
 	Foreground OptColor `toml:"foreground" abstract:"SpecialColors.Foreground"`
 }
 
-// Cursor colors
 type Cursor struct {
 	Cursor OptColor `toml:"cursor" abstract:"SpecialColors.Cursor"`
 	Text   OptColor `toml:"text" abstract:"SpecialColors.CursorText"`
 }
 
-// Normal ANSI colors
 type Normal struct {
 	Black   OptColor `toml:"black" abstract:"AnsiColors.Black"`
 	Blue    OptColor `toml:"blue" abstract:"AnsiColors.Blue"`
@@ -30,7 +25,6 @@ type Normal struct {
 	Yellow  OptColor `toml:"yellow" abstract:"AnsiColors.Yellow"`
 }
 
-// Bright ANSI colors
 type Bright struct {
 	Black   OptColor `toml:"black" abstract:"AnsiColors.BrightBlack"`
 	Blue    OptColor `toml:"blue" abstract:"AnsiColors.BrightBlue"`
@@ -42,13 +36,11 @@ type Bright struct {
 	Yellow  OptColor `toml:"yellow" abstract:"AnsiColors.BrightYellow"`
 }
 
-// Selection colors
 type Selection struct {
 	Background OptColor `toml:"background" abstract:"SpecialColors.Selection"`
 	Text       OptColor `toml:"text" abstract:"SpecialColors.SelectedText"`
 }
 
-// Colors struct
 type Colors struct {
 	Primary   Primary   `toml:"primary"`
 	Cursor    Cursor    `toml:"cursor"`
@@ -57,25 +49,22 @@ type Colors struct {
 	Selection Selection `toml:"selection"`
 }
 
-// AlacrittyScheme with abstract tags
 type AlacrittyScheme struct {
 	Colors Colors `toml:"colors"`
 }
 
 func (a *AlacrittyScheme) FromString(input string) error {
-	// Unmarshal the input TOML string into the AlacrittyScheme struct
 	err := toml.Unmarshal([]byte(input), a)
 	if err != nil {
-
+		return err
 	}
 	return nil
 }
 
 func (a *AlacrittyScheme) ToString() (string, error) {
-	// Marshal the AlacrittyScheme struct into a TOML string
 	data, err := toml.Marshal(a)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal struct to TOML: %w", err)
+		return "", err
 	}
 	return string(data), nil
 }

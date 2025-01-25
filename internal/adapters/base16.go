@@ -1,8 +1,6 @@
 package adapters
 
 import (
-	"fmt"
-
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,10 +26,9 @@ type Base16Scheme struct {
 }
 
 func (rw *Base16Scheme) FromString(input string) error {
-	// Unmarshal the input YAML string into the Base16Scheme struct
 	err := yaml.Unmarshal([]byte(input), rw)
 	if err != nil {
-		return fmt.Errorf("failed to unmarshal Base16 YAML: %w", err)
+		return err
 	}
 	return nil
 }
@@ -40,7 +37,7 @@ func (rw *Base16Scheme) ToString() (string, error) {
 	// Marshal the Base16Scheme struct to a YAML string
 	data, err := yaml.Marshal(rw)
 	if err != nil {
-		return "", fmt.Errorf("failed to marshal struct to YAML: %w", err)
+		return "", err
 	}
 	return string(data), nil
 }

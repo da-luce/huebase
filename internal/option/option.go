@@ -133,7 +133,6 @@ func (o *Option[T]) UnmarshalText(data []byte) error {
 	o.value = value
 	o.isSet = true
 
-	fmt.Printf("Unmarshaled value: %+v\n", o.value)
 	return nil
 }
 
