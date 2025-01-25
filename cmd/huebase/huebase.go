@@ -11,9 +11,12 @@ import (
 )
 
 var schemes = map[string]adapters.Adapter{
-	"base16":    &adapters.Base16Scheme{},
-	"16":        &adapters.Base16Scheme{},
-	"alacritty": &adapters.AlacrittyScheme{},
+	"base16":           &adapters.Base16Scheme{},
+	"16":               &adapters.Base16Scheme{},
+	"alacritty":        &adapters.AlacrittyScheme{},
+	"windows_terminal": &adapters.WindowsTerminalScheme{},
+	"wt":               &adapters.WindowsTerminalScheme{},
+	"gogh":             &adapters.GoghScheme{},
 }
 
 func convertTheme(inputFile string, inputFormat string, outputFormat string) (string, error) {

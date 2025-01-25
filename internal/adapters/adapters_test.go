@@ -32,6 +32,11 @@ func TestAdapters(t *testing.T) {
 			filepath: "../../themes/wt.json",
 			scheme:   &WindowsTerminalScheme{},
 		},
+		{
+			name:     "Gogh",
+			filepath: "../../themes/gogh.yml",
+			scheme:   &GoghScheme{},
+		},
 	}
 
 	// Run the tests for each scheme
