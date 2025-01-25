@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -9,24 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Define a function to read the theme file and create an adapter instance
-func loadTheme(adapter Adapter, path string) error {
-	// Read the file content
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return fmt.Errorf("failed to read theme file '%s': %w", path, err)
-	}
-
-	// Use the adapter's FromString method to parse the content
-	err = adapter.FromString(string(data))
-	if err != nil {
-		return fmt.Errorf("failed to parse theme file '%s': %w", path, err)
-	}
-
-	return nil
-}
-
-func TestAdapters_ToAbstractAndFromAbstract(t *testing.T) {
+func TestAdapters(t *testing.T) {
 	// Define test cases with different schemes
 	testCases := []struct {
 		name     string
@@ -45,12 +29,81 @@ func TestAdapters_ToAbstractAndFromAbstract(t *testing.T) {
 		},
 	}
 
-	// Run the  test for each scheme
+	// Run the tests for each scheme
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			inversePropertyTest(t, test.filepath, test.scheme)
+			// Test loadTheme
+			t.Run("LoadTheme", func(t *testing.T) {
+				err := loadTheme(test.scheme, test.filepath)
+				if err != nil {
+					t.Fatalf("Failed to load theme for %s: %v", test.name, err)
+				}
+			})
+
+			// Test saveTheme using a fake buffer
+			t.Run("SaveTheme", func(t *testing.T) {
+				buffer := &bytes.Buffer{}
+				err := saveTheme(test.scheme, buffer)
+				if err != nil {
+					t.Fatalf("Failed to save theme for %s: %v", test.name, err)
+				}
+				if buffer.Len() == 0 {
+					t.Fatalf("SaveTheme produced empty output for %s", test.name)
+				}
+			})
+
+			// Run inversePropertyTest
+			t.Run("InversePropertyTest", func(t *testing.T) {
+				inversePropertyTest(t, test.filepath, test.scheme)
+			})
 		})
 	}
+}
+
+// Define a function to read the theme file and create an adapter instance
+func loadTheme(adapter Adapter, path string) error {
+	// Read the file content
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read theme file '%s': %w", path, err)
+	}
+
+	// Use the adapter's FromString method to parse the content
+	err = adapter.FromString(string(data))
+	if err != nil {
+		return fmt.Errorf("failed to parse theme file '%s': %w", path, err)
+	}
+
+	return nil
+}
+
+// saveTheme tests the adapter's ToString method by writing to a fake buffer.
+//
+// Parameters:
+//   - adapter: An implementation of the Adapter interface.
+//   - buffer: A writable buffer to simulate saving the theme.
+//
+// Returns:
+//   - An error if the ToString method fails or if the buffer cannot be written to.
+func saveTheme(adapter Adapter, buffer *bytes.Buffer) error {
+	// Ensure the adapter implements the necessary method
+	if adapter == nil {
+		return fmt.Errorf("adapter cannot be nil")
+	}
+
+	// Use the adapter's ToString method to get the theme content as a string
+	data, err := adapter.ToString()
+	if err != nil {
+		return fmt.Errorf("failed to serialize theme: %w", err)
+	}
+
+	// Write the data to the buffer
+	_, err = buffer.WriteString(data)
+	if err != nil {
+		return fmt.Errorf("failed to write to buffer: %w", err)
+	}
+
+	return nil
 }
 
 // Generic test for Adapter instances
