@@ -42,13 +42,13 @@ func convertTheme(inputFile string, inputFormat string, outputFormat string) (st
 	}
 
 	// Convert to AbstractTheme
-	abstractTheme, err := inputReader.ToAbstract()
+	abstractTheme, err := ToAbstract(inputReader)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
 	}
 
 	// Convert AbstractTheme to output format
-	outputWriter.FromAbstract(&abstractTheme)
+	FromAbstract(&abstractTheme, outputWriter)
 
 	// Convert output to string
 	outputData, err := outputWriter.ToString()

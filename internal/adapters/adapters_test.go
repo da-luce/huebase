@@ -126,14 +126,14 @@ func inversePropertyTest(t *testing.T, filepath string, scheme Adapter) {
 	assert.NoError(t, err, "loadTheme should not produce an error")
 
 	// Convert the scheme to AbstractScheme
-	abstract, err := scheme.ToAbstract()
+	abstract, err := ToAbstract(scheme)
 	assert.NoError(t, err, "ToAbstract should not produce an error")
 
 	// Create a new instance of the same type as the input scheme
 	newScheme := reflect.New(reflect.TypeOf(scheme).Elem()).Interface().(Adapter)
 
 	// Convert back from AbstractScheme to the original scheme
-	newScheme.FromAbstract(&abstract)
+	FromAbstract(&abstract, newScheme)
 
 	// Ensure the original and reconstructed schemes are deeply equal
 	assert.True(t, reflect.DeepEqual(scheme, newScheme),
@@ -147,11 +147,11 @@ func nonNoneFieldsTest(t *testing.T, filepath string, scheme Adapter) {
 	assert.NoError(t, err, "loadTheme should not produce an error")
 
 	// Convert the scheme to AbstractScheme
-	abstract, err := scheme.ToAbstract()
+	abstract, err := ToAbstract(scheme)
 	assert.NoError(t, err, "ToAbstract should not produce an error")
 
 	// Count non-None fields
-	nonNoneCount := CountNonNoneFields(abstract)
+	nonNoneCount := countNonNullFields(abstract)
 
 	// Assert that there are at least 8 non-None fields
 	assert.GreaterOrEqual(t, nonNoneCount, 8, "Expected at least 8 non-None fields in the abstract theme")

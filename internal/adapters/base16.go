@@ -5,24 +5,24 @@ import (
 )
 
 type Base16Scheme struct {
-	Scheme OptString `yaml:"scheme" abstract:"Metadata.Name"`
-	Author OptString `yaml:"author" abstract:"Metadata.Author"`
-	Base00 OptColor  `yaml:"base00" abstract:"SpecialColors.Background"`
-	Base01 OptColor  `yaml:"base01" abstract:"SpecialColors.Selection"`
-	Base02 OptColor  `yaml:"base02" abstract:"SpecialColors.Cursor"`
-	Base03 OptColor  `yaml:"base03" abstract:"SpecialColors.CursorText"`
-	Base04 OptColor  `yaml:"base04" abstract:"SpecialColors.SelectedText"`
-	Base05 OptColor  `yaml:"base05" abstract:"SpecialColors.Foreground"`
-	Base06 OptColor  `yaml:"base06" abstract:"SpecialColors.ForegroundBright"`
-	Base07 OptColor  `yaml:"base07" abstract:"AnsiColors.White"`
-	Base08 OptColor  `yaml:"base08" abstract:"AnsiColors.Red"`
-	Base09 OptColor  `yaml:"base09" abstract:"AnsiColors.Yellow"`
-	Base0A OptColor  `yaml:"base0A" abstract:"AnsiColors.Blue"`
-	Base0B OptColor  `yaml:"base0B" abstract:"AnsiColors.Green"`
-	Base0C OptColor  `yaml:"base0C" abstract:"AnsiColors.Cyan"`
-	Base0D OptColor  `yaml:"base0D" abstract:"AnsiColors.BrightBlue"`
-	Base0E OptColor  `yaml:"base0E" abstract:"AnsiColors.Magenta"`
-	Base0F OptColor  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
+	Scheme *string `yaml:"scheme" abstract:"Metadata.Name"`
+	Author *string `yaml:"author" abstract:"Metadata.Author"`
+	Base00 *Color  `yaml:"base00" abstract:"SpecialColors.Background"`
+	Base01 *Color  `yaml:"base01" abstract:"SpecialColors.Selection"`
+	Base02 *Color  `yaml:"base02" abstract:"SpecialColors.Cursor"`
+	Base03 *Color  `yaml:"base03" abstract:"SpecialColors.CursorText"`
+	Base04 *Color  `yaml:"base04" abstract:"SpecialColors.SelectedText"`
+	Base05 *Color  `yaml:"base05" abstract:"SpecialColors.Foreground"`
+	Base06 *Color  `yaml:"base06" abstract:"SpecialColors.ForegroundBright"`
+	Base07 *Color  `yaml:"base07" abstract:"AnsiColors.White"`
+	Base08 *Color  `yaml:"base08" abstract:"AnsiColors.Red"`
+	Base09 *Color  `yaml:"base09" abstract:"AnsiColors.Yellow"`
+	Base0A *Color  `yaml:"base0A" abstract:"AnsiColors.Blue"`
+	Base0B *Color  `yaml:"base0B" abstract:"AnsiColors.Green"`
+	Base0C *Color  `yaml:"base0C" abstract:"AnsiColors.Cyan"`
+	Base0D *Color  `yaml:"base0D" abstract:"AnsiColors.BrightBlue"`
+	Base0E *Color  `yaml:"base0E" abstract:"AnsiColors.Magenta"`
+	Base0F *Color  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
 }
 
 func (rw *Base16Scheme) FromString(input string) error {
@@ -40,12 +40,4 @@ func (rw *Base16Scheme) ToString() (string, error) {
 		return "", err
 	}
 	return string(data), nil
-}
-
-func (rw *Base16Scheme) ToAbstract() (AbstractScheme, error) {
-	return ToAbstractDefault(rw)
-}
-
-func (rw *Base16Scheme) FromAbstract(abstract *AbstractScheme) error {
-	return FromAbstractDefault(abstract, rw)
 }
