@@ -2,11 +2,21 @@ package adapters
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/da-luce/huebase/internal/color"
+)
+
+type LogLevel = int
+
+const (
+	LevelDebug LogLevel = iota
+	LevelInfo
+	LevelWarn
+	LevelError
 )
 
 // Scheme adapter structs must implement this interface for reading and writing
@@ -191,7 +201,6 @@ func isBaseType(t reflect.Type) bool {
 		// Check if the pointer points to a base type
 		return isBaseType(t.Elem())
 	default:
-
 		if t.Name() == "Color" {
 			return true
 		}
@@ -212,28 +221,23 @@ func traverseFields(value reflect.Value, visitFunc func(field reflect.StructFiel
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
 	}
-	if value.Kind() != reflect.Struct {
-		return
-	}
 
 	// Iterate over the fields of the struct
 	for i := 0; i < value.NumField(); i++ {
+
 		field := value.Type().Field(i)
 		fieldValue := value.Field(i)
-
-		// Do not recurse further on Color structs and the like
-		if isBaseType(field.Type) {
-			visitFunc(field, fieldValue)
-			continue
-		}
 
 		// Visit the current field
 		visitFunc(field, fieldValue)
 
+		// Do not recurse further on Color structs and the like
+		if isBaseType(field.Type) {
+			continue
+		}
+
 		// Recursively visit nested structs
-		if fieldValue.Kind() == reflect.Ptr && !fieldValue.IsNil() && fieldValue.Elem().Kind() == reflect.Struct {
-			traverseFields(fieldValue, visitFunc)
-		} else if fieldValue.Kind() == reflect.Struct {
+		if fieldValue.Kind() == reflect.Ptr || fieldValue.Kind() == reflect.Struct {
 			traverseFields(fieldValue, visitFunc)
 		}
 	}
@@ -256,4 +260,37 @@ func countNonNullFields(abstract AbstractScheme) int {
 	})
 
 	return count
+}
+
+// warnUnsetFields iterates through fields in a struct and logs a warning
+// for each field that is a pointer and has not been set (i.e., is nil).
+//
+// Parameters:
+//   - value: The reflect.Value of a struct or a pointer to a struct.
+//
+// Returns:
+//   - None.
+func WarnUnsetFields(value interface{}, prefix string, level LogLevel) {
+	// Ensure that the input is a pointer to a struct
+	adapterValue := reflect.ValueOf(value)
+	if adapterValue.Kind() == reflect.Ptr {
+		adapterValue = adapterValue.Elem()
+	}
+
+	if adapterValue.Kind() != reflect.Struct {
+		log.Println("Error: Expected a struct, got", adapterValue.Kind())
+		return
+	}
+
+	// Iterate through the fields and check if they are unset (nil)
+	traverseFields(adapterValue, func(field reflect.StructField, fieldValue reflect.Value) {
+		if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
+			switch level {
+			case LevelInfo:
+				log.Infof("%s: Field '%s' is not set.", prefix, field.Name)
+			case LevelError:
+				log.Errorf("%s: Field '%s' is not set.", prefix, field.Name)
+			}
+		}
+	})
 }

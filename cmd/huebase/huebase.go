@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/da-luce/huebase/internal/adapters"
 )
 
@@ -25,6 +27,7 @@ func convertTheme(inputFile string, inputFormat string, outputFormat string) (st
 	if !ok {
 		return "", errors.New("unsupported input format: " + inputFormat)
 	}
+
 	outputWriter, ok := schemes[outputFormat]
 	if !ok {
 		return "", errors.New("unsupported output format: " + outputFormat)
@@ -41,14 +44,20 @@ func convertTheme(inputFile string, inputFormat string, outputFormat string) (st
 		return "", fmt.Errorf("failed to parse input file: %v", err)
 	}
 
+	adapters.WarnUnsetFields(inputReader, "Missing in Input", adapters.LevelError)
+
 	// Convert to AbstractTheme
-	abstractTheme, err := ToAbstract(inputReader)
+	abstractTheme, err := adapters.ToAbstract(inputReader)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
 	}
 
+	adapters.WarnUnsetFields(abstractTheme, "Unmapped Fields", adapters.LevelInfo)
+
 	// Convert AbstractTheme to output format
-	FromAbstract(&abstractTheme, outputWriter)
+	adapters.FromAbstract(&abstractTheme, outputWriter)
+
+	adapters.WarnUnsetFields(outputWriter, "Missing in Result", adapters.LevelError)
 
 	// Convert output to string
 	outputData, err := outputWriter.ToString()
@@ -67,6 +76,8 @@ func main() {
 	outputFormat := flag.String("to", "", "Output format (e.g., alacritty)")
 
 	flag.Parse()
+
+	log.SetLevel(log.InfoLevel)
 
 	// Validate required arguments
 	if *inputFile == "" || *inputFormat == "" || *outputFormat == "" {

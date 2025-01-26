@@ -21,7 +21,7 @@ Obviously, converting color schemes will not be perfect. Some formats contain in
 ```text
 Missing field warnings
 for fields expected,
-but found in file
+but found not in file
 (potentially convertible,
 but not found)
 v
