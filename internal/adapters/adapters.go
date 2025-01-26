@@ -13,8 +13,13 @@ import (
 // Scheme adapter structs must implement this interface for reading and writing
 // to text
 type Adapter interface {
-	ToString() (string, error)
+	// Reading
 	FromString(input string) error
+	ToAbstract() (AbstractScheme, error)
+
+	// Writing
+	FromAbstract(abstract *AbstractScheme) error
+	ToString() (string, error)
 }
 
 type Color = color.Color
@@ -72,7 +77,7 @@ type AbstractScheme struct {
 // Returns:
 //   - AbstractScheme with mapped values.
 //   - An error if the input is invalid or mapping fails.
-func ToAbstract(adapter Adapter) (AbstractScheme, error) {
+func ToAbstractDefault(adapter Adapter) (AbstractScheme, error) {
 
 	// Ensure the adapter is a struct or pointer to a struct
 	adapterValue := reflect.ValueOf(adapter)
@@ -128,16 +133,15 @@ func ToAbstract(adapter Adapter) (AbstractScheme, error) {
 // Parameters:
 //   - abstract: A pointer to the AbstractScheme containing source data.
 //   - output: An implementation of the Adapter interface to be populated.
-func FromAbstract(abstract *AbstractScheme, output Adapter) {
+func FromAbstractDefault(abstract *AbstractScheme, output Adapter) error {
 	// Ensure `abstract` is not nil
 	if abstract == nil {
-		log.Println("Error: AbstractScheme is nil. Cannot populate fields.")
-		return
+		return fmt.Errorf("Error: AbstractScheme is nil. Cannot populate fields")
 	}
 
 	outputValue := reflect.ValueOf(output)
 	if outputValue.Kind() != reflect.Ptr || outputValue.Elem().Kind() != reflect.Struct {
-		log.Fatalf("Output must be a pointer to a struct, got %s", outputValue.Kind())
+		return fmt.Errorf("Output must be a pointer to a struct, got %s", outputValue.Kind())
 	}
 
 	// Get the underlying struct value
@@ -174,6 +178,8 @@ func FromAbstract(abstract *AbstractScheme, output Adapter) {
 			}
 		}
 	})
+
+	return nil
 }
 
 // isBaseType determines if a reflect.Type is a base type that should not be further traversed.

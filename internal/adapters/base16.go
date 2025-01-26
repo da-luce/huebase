@@ -41,3 +41,11 @@ func (rw *Base16Scheme) ToString() (string, error) {
 	}
 	return string(data), nil
 }
+
+func (rw *Base16Scheme) ToAbstract() (AbstractScheme, error) {
+	return ToAbstractDefault(rw)
+}
+
+func (rw *Base16Scheme) FromAbstract(abstract *AbstractScheme) error {
+	return FromAbstractDefault(abstract, rw)
+}

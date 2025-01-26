@@ -42,3 +42,11 @@ func (rw *GoghScheme) ToString() (string, error) {
 	}
 	return string(data), nil
 }
+
+func (rw *GoghScheme) ToAbstract() (AbstractScheme, error) {
+	return ToAbstractDefault(rw)
+}
+
+func (rw *GoghScheme) FromAbstract(abstract *AbstractScheme) error {
+	return FromAbstractDefault(abstract, rw)
+}

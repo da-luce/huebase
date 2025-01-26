@@ -68,3 +68,11 @@ func (a *AlacrittyScheme) ToString() (string, error) {
 	}
 	return string(data), nil
 }
+
+func (rw *AlacrittyScheme) ToAbstract() (AbstractScheme, error) {
+	return ToAbstractDefault(rw)
+}
+
+func (rw *AlacrittyScheme) FromAbstract(abstract *AbstractScheme) error {
+	return FromAbstractDefault(abstract, rw)
+}

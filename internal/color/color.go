@@ -7,10 +7,10 @@ import (
 
 // Color represents a color with RGBA components.
 type Color struct {
-	Red   float64
-	Green float64
-	Blue  float64
-	Alpha float64
+	Alpha float64 `xml:"Alpha Component"`
+	Red   float64 `xml:"Red Component"`
+	Green float64 `xml:"Green Component"`
+	Blue  float64 `xml:"Blue Component"`
 }
 
 // NewColor creates a new Color instance.
