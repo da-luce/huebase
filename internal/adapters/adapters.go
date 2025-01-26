@@ -61,13 +61,78 @@ type SpecialColors struct {
 type Meta struct {
 	Name   *string
 	Author *string
+	Date   *string
+}
+type Scope struct {
+	Basic         BasicScope
+	Advanced      AdvancedScope
+	Markup        MarkupScope
+	Diagnostics   DiagnosticScope
+	Editor        EditorScope
+	Miscellaneous MiscScope
+}
+
+type BasicScope struct {
+	Comment  *Color
+	Keyword  *Color
+	Constant *Color
+	String   *Color
+	Number   *Color
+	Function *Color
+	Variable *Color
+	Operator *Color
+}
+
+type AdvancedScope struct {
+	Class     *Color
+	Type      *Color
+	Property  *Color
+	Attribute *Color
+	Tag       *Color
+	Namespace *Color
+	Parameter *Color
+	Selector  *Color
+}
+
+type MarkupScope struct {
+	Heading     *Color
+	Bold        *Color
+	Italic      *Color
+	Underline   *Color
+	Link        *Color
+	Quote       *Color
+	List        *Color
+	CodeBlock   *Color
+	RawText     *Color
+	TemplateTag *Color
+}
+
+type DiagnosticScope struct {
+	Invalid    *Color
+	Deprecated *Color
+}
+
+type EditorScope struct {
+	Cursor      *Color
+	CursorLine  *Color
+	LineNumbers *Color
+	Highlight   *Color
+}
+
+type MiscScope struct {
+	Meta       *Color
+	Annotation *Color
+	Regex      *Color
+	Background *Color
+	Foreground *Color
 }
 
 // AbstractTheme represents the most generic theme possible
 type AbstractScheme struct {
+	Metadata      Meta
+	ScopeColors   Scope
 	AnsiColors    AnsiColors
 	SpecialColors SpecialColors
-	Metadata      Meta
 }
 
 func ConvertTheme(input string, reader Adapter, writer Adapter) (string, error) {
