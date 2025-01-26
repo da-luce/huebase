@@ -72,11 +72,10 @@ type AbstractScheme struct {
 
 func ConvertTheme(input string, reader Adapter, writer Adapter) (string, error) {
 
-	// Convert to struct (populate inputReader directly)
+	// Convert to struct
 	if err := reader.FromString(string(input)); err != nil {
 		return "", fmt.Errorf("failed to parse input file: %v", err)
 	}
-
 	WarnUnsetFields(reader, "Missing in Input", LevelError)
 
 	// Convert to AbstractTheme
@@ -84,12 +83,10 @@ func ConvertTheme(input string, reader Adapter, writer Adapter) (string, error) 
 	if err != nil {
 		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
 	}
-
 	WarnUnsetFields(abstractTheme, "Unmapped", LevelInfo)
 
 	// Convert AbstractTheme to output format
 	FromAbstract(&abstractTheme, writer)
-
 	WarnUnsetFields(writer, "Missing in Result", LevelError)
 
 	// Convert output to string
