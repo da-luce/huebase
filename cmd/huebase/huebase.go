@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -19,53 +18,6 @@ var schemes = map[string]adapters.Adapter{
 	"windows_terminal": &adapters.WindowsTerminalScheme{},
 	"wt":               &adapters.WindowsTerminalScheme{},
 	"gogh":             &adapters.GoghScheme{},
-}
-
-func convertTheme(inputFile string, inputFormat string, outputFormat string) (string, error) {
-	// Ensure the formats are supported
-	inputReader, ok := schemes[inputFormat]
-	if !ok {
-		return "", errors.New("unsupported input format: " + inputFormat)
-	}
-
-	outputWriter, ok := schemes[outputFormat]
-	if !ok {
-		return "", errors.New("unsupported output format: " + outputFormat)
-	}
-
-	// Read the input file
-	inputData, err := ioutil.ReadFile(inputFile)
-	if err != nil {
-		return "", fmt.Errorf("failed to read input file: %v", err)
-	}
-
-	// Convert to struct (populate inputReader directly)
-	if err := inputReader.FromString(string(inputData)); err != nil {
-		return "", fmt.Errorf("failed to parse input file: %v", err)
-	}
-
-	adapters.WarnUnsetFields(inputReader, "Missing in Input", adapters.LevelError)
-
-	// Convert to AbstractTheme
-	abstractTheme, err := adapters.ToAbstract(inputReader)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
-	}
-
-	adapters.WarnUnsetFields(abstractTheme, "Unmapped Fields", adapters.LevelInfo)
-
-	// Convert AbstractTheme to output format
-	adapters.FromAbstract(&abstractTheme, outputWriter)
-
-	adapters.WarnUnsetFields(outputWriter, "Missing in Result", adapters.LevelError)
-
-	// Convert output to string
-	outputData, err := outputWriter.ToString()
-	if err != nil {
-		return "", fmt.Errorf("failed to convert theme to output format: %v", err)
-	}
-
-	return outputData, nil
 }
 
 func main() {
@@ -86,8 +38,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	reader, ok := schemes[*inputFormat]
+	if !ok {
+		fmt.Printf("unsupported input format: " + *inputFormat)
+		os.Exit(1)
+	}
+
+	writer, ok := schemes[*outputFormat]
+	if !ok {
+		fmt.Printf("unsupported output format: " + *outputFormat)
+		os.Exit(1)
+	}
+
+	data, err := ioutil.ReadFile(*inputFile)
+	if err != nil {
+		fmt.Printf("failed to read input file: %v", err)
+		os.Exit(1)
+	}
+
 	// Perform the conversion
-	outputData, err := convertTheme(*inputFile, *inputFormat, *outputFormat)
+	outputData, err := adapters.ConvertTheme(string(data), reader, writer)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)

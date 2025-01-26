@@ -70,6 +70,37 @@ type AbstractScheme struct {
 	Metadata      Meta
 }
 
+func ConvertTheme(input string, reader Adapter, writer Adapter) (string, error) {
+
+	// Convert to struct (populate inputReader directly)
+	if err := reader.FromString(string(input)); err != nil {
+		return "", fmt.Errorf("failed to parse input file: %v", err)
+	}
+
+	WarnUnsetFields(reader, "Missing in Input", LevelError)
+
+	// Convert to AbstractTheme
+	abstractTheme, err := ToAbstract(reader)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert to AbstractTheme: %v", err)
+	}
+
+	WarnUnsetFields(abstractTheme, "Unmapped", LevelInfo)
+
+	// Convert AbstractTheme to output format
+	FromAbstract(&abstractTheme, writer)
+
+	WarnUnsetFields(writer, "Missing in Result", LevelError)
+
+	// Convert output to string
+	outputData, err := writer.ToString()
+	if err != nil {
+		return "", fmt.Errorf("failed to convert theme to output format: %v", err)
+	}
+
+	return outputData, nil
+}
+
 // ToAbstract converts an Adapter interface implementation into an AbstractScheme.
 // Fields are mapped based on "abstract" tags in the concrete struct.
 //
