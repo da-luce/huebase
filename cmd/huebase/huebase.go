@@ -18,6 +18,7 @@ var schemes = map[string]adapters.Adapter{
 	"windows_terminal": &adapters.WindowsTerminalScheme{},
 	"wt":               &adapters.WindowsTerminalScheme{},
 	"gogh":             &adapters.GoghScheme{},
+	"iterm":            &adapters.ItermScheme{},
 }
 
 func main() {
@@ -40,19 +41,19 @@ func main() {
 
 	reader, ok := schemes[*inputFormat]
 	if !ok {
-		fmt.Printf("unsupported input format: " + *inputFormat)
+		fmt.Printf("Unsupported input format: %s\n", *inputFormat)
 		os.Exit(1)
 	}
 
 	writer, ok := schemes[*outputFormat]
 	if !ok {
-		fmt.Printf("unsupported output format: " + *outputFormat)
+		fmt.Printf("Unsupported output format: %s,\n", *outputFormat)
 		os.Exit(1)
 	}
 
 	data, err := ioutil.ReadFile(*inputFile)
 	if err != nil {
-		fmt.Printf("failed to read input file: %v", err)
+		fmt.Printf("Failed to read input file: %v", err)
 		os.Exit(1)
 	}
 

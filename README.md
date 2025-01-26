@@ -33,3 +33,8 @@ Original theme --> Abstract Theme --> New Theme
     even converted      used during conversion
     (unnecessary fields) (unconvertible fields)
 ```
+
+## Notes
+
+Add backup conversion fields, i.e. if don't have one-to-one mapping use another
+field to fill it's place.

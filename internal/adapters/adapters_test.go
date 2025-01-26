@@ -37,6 +37,11 @@ func TestAdapters(t *testing.T) {
 			filepath: "../../themes/gogh.yml",
 			scheme:   &GoghScheme{},
 		},
+		{
+			name:     "iTerm",
+			filepath: "../../themes/iterm.itermcolors",
+			scheme:   &ItermScheme{},
+		},
 	}
 
 	// Run the tests for each scheme
@@ -138,6 +143,7 @@ func inversePropertyTest(t *testing.T, filepath string, scheme Adapter) {
 	// Ensure the original and reconstructed schemes are deeply equal
 	assert.True(t, reflect.DeepEqual(scheme, newScheme),
 		"The original scheme and the reconstructed scheme should match")
+	CompareStructs(scheme, newScheme)
 }
 
 func nonNoneFieldsTest(t *testing.T, filepath string, scheme Adapter) {
@@ -155,4 +161,45 @@ func nonNoneFieldsTest(t *testing.T, filepath string, scheme Adapter) {
 
 	// Assert that there are at least 8 non-None fields
 	assert.GreaterOrEqual(t, nonNoneCount, 8, "Expected at least 8 non-None fields in the abstract theme")
+}
+
+// CompareStructs prints the differences between two structs, including field names
+func CompareStructs(a, b interface{}) {
+	// Ensure both are of the same type
+	if reflect.TypeOf(a) != reflect.TypeOf(b) {
+		fmt.Println("Error: Structs are of different types")
+		return
+	}
+
+	// Get the value and type of the structs, handling pointers
+	valA := reflect.ValueOf(a)
+	valB := reflect.ValueOf(b)
+
+	if valA.Kind() == reflect.Ptr {
+		valA = valA.Elem()
+	}
+	if valB.Kind() == reflect.Ptr {
+		valB = valB.Elem()
+	}
+
+	if valA.Kind() != reflect.Struct || valB.Kind() != reflect.Struct {
+		fmt.Println("Error: Inputs must be structs or pointers to structs")
+		return
+	}
+
+	typ := valA.Type()
+
+	// Iterate through the fields
+	for i := 0; i < valA.NumField(); i++ {
+		fieldA := valA.Field(i)
+		fieldB := valB.Field(i)
+		fieldType := typ.Field(i) // Get field type
+		fieldName := fieldType.Name
+
+		// Compare field values
+		if !reflect.DeepEqual(fieldA.Interface(), fieldB.Interface()) {
+			fmt.Printf("Difference in field '%s' (type: %s):\n\tStruct A: %v\n\tStruct B: %v\n",
+				fieldName, fieldType.Type, fieldA.Interface(), fieldB.Interface())
+		}
+	}
 }
