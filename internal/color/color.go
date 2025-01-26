@@ -7,10 +7,10 @@ import (
 
 // Color represents a color with RGBA components.
 type Color struct {
-	Alpha float64 `xml:"Alpha Component"`
-	Red   float64 `xml:"Red Component"`
-	Green float64 `xml:"Green Component"`
-	Blue  float64 `xml:"Blue Component"`
+	Alpha float64
+	Red   float64
+	Green float64
+	Blue  float64
 }
 
 // NewColor creates a new Color instance.
@@ -141,6 +141,10 @@ func (c *Color) UnmarshalText(text []byte) error {
 	}
 	*c = color
 	return nil
+}
+
+func (c *Color) MarshalText() (text []byte, err error) {
+	return []byte(c.ToHex(true)), nil
 }
 
 // MarshalTOML allows TOML to serialize the Color type.

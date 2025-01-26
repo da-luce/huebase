@@ -45,7 +45,7 @@ type Colors struct {
 	Primary   Primary   `toml:"primary"`
 	Cursor    Cursor    `toml:"cursor"`
 	Normal    Normal    `toml:"normal"`
-	Bright    Bright    `toml:"colors.bright"`
+	Bright    Bright    `toml:"bright"`
 	Selection Selection `toml:"selection"`
 }
 
