@@ -1,0 +1,40 @@
+[
+  {
+    "name": "Solarized",
+    "author": "Ethan Schoonover",
+    "website": "https://ethanschoonover.com/solarized/",
+    "styles": ["light", "dark"],
+    "implementations": [
+      {
+        "platform": "vim",
+        "source": "https://github.com/altercation/vim-colors-solarized",
+        "official": true
+      },
+      {
+        "platform": "vscode",
+        "source": "https://github.com/ryanolsonx/vscode-solarized-theme"
+      }
+    ]
+  },
+  {
+    "name": "Dracula",
+    "author": "Zeno Rocha",
+    "website": "https://draculatheme.com/",
+    "styles": ["dark"],
+    "implementations": [
+      {
+        "platform": "vim",
+        "source": "https://github.com/dracula/vim",
+        "official": true
+      },
+      {
+        "platform": "vscode",
+        "source": "https://github.com/dracula/vscode"
+      },
+      {
+        "platform": "terminal",
+        "source": "https://github.com/dracula/terminal"
+      }
+    ]
+  }
+]

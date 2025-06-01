@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,31 +18,11 @@ func TestAdapters(t *testing.T) {
 		filepath string
 		scheme   Adapter
 	}{
-		{
-			name:     "Base16",
-			filepath: "../../themes/base16.yaml",
-			scheme:   &Base16Scheme{},
-		},
-		{
-			name:     "Alacritty ",
-			filepath: "../../themes/alacritty.toml",
-			scheme:   &AlacrittyScheme{},
-		},
-		{
-			name:     "Windows Terminal",
-			filepath: "../../themes/wt.json",
-			scheme:   &WindowsTerminalScheme{},
-		},
-		{
-			name:     "Gogh",
-			filepath: "../../themes/gogh.yml",
-			scheme:   &GoghScheme{},
-		},
-		{
-			name:     "iTerm",
-			filepath: "../../themes/iterm.itermcolors",
-			scheme:   &ItermScheme{},
-		},
+		{name: "Base16", filepath: "../../themes/base16.yaml", scheme: &Base16Scheme{}},
+		{name: "Alacritty ", filepath: "../../themes/alacritty.toml", scheme: &AlacrittyScheme{}},
+		{name: "Windows Terminal", filepath: "../../themes/wt.json", scheme: &WindowsTerminalScheme{}},
+		{name: "Gogh", filepath: "../../themes/gogh.yml", scheme: &GoghScheme{}},
+		{name: "iTerm", filepath: "../../themes/iterm.itermcolors", scheme: &ItermScheme{}},
 	}
 
 	// Run the tests for each scheme
@@ -72,6 +53,10 @@ func TestAdapters(t *testing.T) {
 
 			t.Run("NonNoneFields", func(t *testing.T) {
 				nonNoneFieldsTest(t, test.filepath, test.scheme)
+			})
+
+			t.Run("SimilarityTest", func(t *testing.T) {
+				similarityTest(t, test.filepath, test.scheme)
 			})
 		})
 	}
@@ -202,4 +187,78 @@ func CompareStructs(a, b interface{}) {
 				fieldName, fieldType.Type, fieldA.Interface(), fieldB.Interface())
 		}
 	}
+}
+
+// Similarity Test
+func similarityTest(t *testing.T, filepath string, scheme Adapter) {
+	// Load the theme into the adapter
+	err := loadTheme(scheme, filepath)
+	assert.NoError(t, err, "loadTheme should not produce an error")
+
+	// Convert to abstract representation
+	abstract, err := ToAbstract(scheme)
+	assert.NoError(t, err, "ToAbstract should not produce an error")
+
+	// Create a new instance of the same type as the input scheme
+	newScheme := reflect.New(reflect.TypeOf(scheme).Elem()).Interface().(Adapter)
+
+	// Convert back from abstract representation
+	FromAbstract(&abstract, newScheme)
+
+	// Serialize both the original and reconstructed scheme
+	originalData, err := scheme.ToString()
+	assert.NoError(t, err, "ToString should not produce an error for the original scheme")
+
+	reconstructedData, err := newScheme.ToString()
+	assert.NoError(t, err, "ToString should not produce an error for the reconstructed scheme")
+
+	print("Origional data:\n" + originalData)
+	print("Reconrstructed data:\n" + reconstructedData)
+	// Compute similarity percentage
+	similarity := computeSimilarity(originalData, reconstructedData)
+
+	// Define a threshold (e.g., 90% similarity)
+	const similarityThreshold = 100.0
+	assert.GreaterOrEqual(t, similarity, similarityThreshold,
+		fmt.Sprintf("Similarity should be at least %.2f%%, but got %.2f%%", similarityThreshold, similarity))
+}
+
+// Compute the similarity between two strings as a percentage
+func computeSimilarity(a, b string) float64 {
+	// Normalize line endings
+	a = strings.ReplaceAll(a, "\r\n", "\n")
+	b = strings.ReplaceAll(b, "\r\n", "\n")
+
+	// Compute the number of matching characters
+	matches := 0
+	minLen := min(len(a), len(b))
+
+	for i := 0; i < minLen; i++ {
+		if a[i] == b[i] {
+			matches++
+		}
+	}
+
+	// Use the longer length as the denominator
+	maxLen := max(len(a), len(b))
+	if maxLen == 0 {
+		return 100.0 // If both are empty, they are fully similar
+	}
+
+	return (float64(matches) / float64(maxLen)) * 100.0
+}
+
+// Helper functions
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }
