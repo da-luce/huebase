@@ -10,6 +10,7 @@
 * Your favorite color schemes should be available everywhere!
 * Crafting custom color schemes can be complex and cumbersome, especially for multiple apps
 * Many apps have great color schemes that aren't available elsewhere (one of my [long time favorites](https://github.com/muukii/jackhammer-syntax) for the retired code editor [Atom](https://github.com/atom/atom))
+* It shouldn't be hard to find and share cool schemes
 
 ## Considerations
 
@@ -37,3 +38,9 @@ Original theme --> Abstract Theme --> New Theme
 
 Add backup conversion fields, i.e. if don't have one-to-one mapping use another
 field to fill it's place.
+
+## Other possible names
+
+* palettr
+* gotone
+* goglow

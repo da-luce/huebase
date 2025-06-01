@@ -2,7 +2,6 @@ package objectmap
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -48,7 +47,7 @@ func traverseFields(
 
 // HasNestedFieldSlice returns (found, field metadata, field value).
 // If not found, found is false and others are zero values.
-func HasNestedFieldSlice(structValue reflect.Value, path []string) (bool, reflect.StructField, reflect.Value) {
+func hasNestedFieldSlice(structValue reflect.Value, path []string) (bool, reflect.StructField, reflect.Value) {
 	if structValue.Kind() == reflect.Ptr {
 		structValue = structValue.Elem()
 	}
@@ -100,7 +99,7 @@ func HasNestedFieldSlice(structValue reflect.Value, path []string) (bool, reflec
 // structPtr must be a reflect.Value of a pointer to a struct (addressable).
 // path is a slice of field names, e.g. []string{"Address", "Street", "Name"}.
 // newVal must be assignable to the target field type.
-func SetNestedField(structPtr reflect.Value, path []string, newVal reflect.Value) error {
+func setNestedField(structPtr reflect.Value, path []string, newVal reflect.Value) error {
 	if structPtr.Kind() != reflect.Ptr || structPtr.IsNil() {
 		return errors.New("input must be a non-nil pointer to a struct")
 	}
@@ -153,7 +152,7 @@ func SetNestedField(structPtr reflect.Value, path []string, newVal reflect.Value
 
 // SplitPath splits a dot-separated string path like "Address.Street.Name"
 // into a slice of strings: []string{"Address", "Street", "Name"}.
-func SplitPath(path string) []string {
+func splitPath(path string) []string {
 	if path == "" {
 		return nil
 	}
@@ -162,8 +161,20 @@ func SplitPath(path string) []string {
 
 // JoinPath joins a slice of strings like []string{"Address", "Street", "Name"}
 // into a dot-separated string path like "Address.Street.Name".
-func JoinPath(path []string) string {
+func joinPath(path []string) string {
 	return strings.Join(path, ".")
+}
+
+// markPathAndParents marks the given path and all of its parent paths as mapped.
+// For example, if path is "N.A.B", it marks "N", "N.A", and "N.A.B" as true in the map.
+// This ensures that when nested fields are set, their parent fields are also considered set.
+// TODO: I feel like this could be made more generic... think about trees and nodes...
+func markPathAndParents(mapped map[string]bool, path string) {
+	parts := splitPath(path) // ["N", "A", "B"]
+	for i := 1; i <= len(parts); i++ {
+		prefix := joinPath(parts[:i])
+		mapped[prefix] = true
+	}
 }
 
 // MapFields copies matching fields from src to dst (both must be pointers to structs)
@@ -171,6 +182,8 @@ func JoinPath(path []string) string {
 // By default, matches source field name to destination field name.
 // If source field has `mapto:"FieldName"` tag, maps to that destination field instead.
 // Supports onUnusedDst and onUnusedSrc callbacks.
+// The callback functions also add the ability to hook in very helpful behavior
+// for testing.
 func MapFields[S any, D any](
 	src *S,
 	dst *D,
@@ -205,19 +218,18 @@ func MapFields[S any, D any](
 		srcElem,
 		nil,
 		func(srcPath []string, srcField reflect.StructField, srcValue reflect.Value) bool {
-			fmt.Printf("Visiting field: %s, type: %s\n", srcPath, srcField.Type)
 
 			// Check tag map
-			dstTargetPath := JoinPath(srcPath) // default: same name
+			dstTargetPath := joinPath(srcPath) // default: same name
 			// TODO: I may get rid of this default scheme, as what if there happens
 			// to be a field in source with the same name that you DON'T want mapping
 			if tagVal, ok := srcField.Tag.Lookup(maptag); ok && tagVal != "" {
 				dstTargetPath = tagVal
 			}
-			targetPath := SplitPath(dstTargetPath)
+			targetPath := splitPath(dstTargetPath)
 
 			// Try and map the field
-			dstValid, dstField, dstFieldVal := HasNestedFieldSlice(dstElem, targetPath)
+			dstValid, dstField, dstFieldVal := hasNestedFieldSlice(dstElem, targetPath)
 
 			if !dstValid {
 				onUnusedSrc(srcPath, srcValue)
@@ -235,13 +247,12 @@ func MapFields[S any, D any](
 			}
 
 			// Now, we can map. Don't recurse any more
-			err := SetNestedField(dstVal, targetPath, srcValue)
+			err := setNestedField(dstVal, targetPath, srcValue)
 			if err != nil {
-				fmt.Println("Got here :(")
 				onUnusedSrc(srcPath, srcValue)
 				return false
 			}
-			mappedDstPaths[JoinPath(targetPath)] = true
+			markPathAndParents(mappedDstPaths, joinPath(targetPath))
 
 			return false
 		},
@@ -252,13 +263,11 @@ func MapFields[S any, D any](
 		dstElem,
 		nil,
 		func(dstPath []string, dstField reflect.StructField, dstValue reflect.Value) bool {
-			_, mapped := mappedDstPaths[JoinPath(dstPath)]
+			_, mapped := mappedDstPaths[joinPath(dstPath)]
 			if mapped {
 				return false // do not recurse more
 			} else {
-				if onUnusedDst != nil {
-					onUnusedDst(dstPath, dstValue)
-				}
+				onUnusedDst(dstPath, dstValue)
 				return true // recurse
 			}
 		},
