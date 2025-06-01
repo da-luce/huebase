@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// traverseFields recursively iterates over all fields in a struct, including nested structs.
+// traverseDFS recursively iterates over all fields in a struct, including nested structs.
 // If the input is a pointer, it is automatically dereferenced.
 //
 // Parameters:
@@ -16,7 +16,7 @@ import (
 //   - fullPath: The dot-separated path to the field (e.g. "Address.Street").
 //   - field: The reflect.StructField containing field metadata.
 //   - value: The reflect.Value representing the field's value.
-func traverseFields(
+func traverseDFS(
 	value reflect.Value,
 	path []string,
 	visitFunc func(fullPath []string, field reflect.StructField, value reflect.Value) bool,
@@ -39,7 +39,7 @@ func traverseFields(
 		shouldRecurse := visitFunc(fullPath, field, fieldVal)
 
 		if shouldRecurse && (fieldVal.Kind() == reflect.Struct || fieldVal.Kind() == reflect.Ptr) {
-			traverseFields(fieldVal, fullPath, visitFunc)
+			traverseDFS(fieldVal, fullPath, visitFunc)
 		}
 	}
 
@@ -177,14 +177,14 @@ func markPathAndParents(mapped map[string]bool, path string) {
 	}
 }
 
-// MapFields copies matching fields from src to dst (both must be pointers to structs)
+// mapInto copies matching fields from src to dst (both must be pointers to structs)
 // MapFieldsWithTag maps fields from src to dst.
 // By default, matches source field name to destination field name.
 // If source field has `mapto:"FieldName"` tag, maps to that destination field instead.
 // Supports onUnusedDst and onUnusedSrc callbacks.
 // The callback functions also add the ability to hook in very helpful behavior
 // for testing.
-func MapFields[S any, D any](
+func mapInto[S any, D any](
 	src *S,
 	dst *D,
 	onUnusedSrc func(fieldPath []string, srcVal reflect.Value),
@@ -214,7 +214,7 @@ func MapFields[S any, D any](
 	}
 
 	mappedDstPaths := make(map[string]bool)
-	traverseFields(
+	traverseDFS(
 		srcElem,
 		nil,
 		func(srcPath []string, srcField reflect.StructField, srcValue reflect.Value) bool {
@@ -259,7 +259,7 @@ func MapFields[S any, D any](
 	)
 
 	// Check dst fields that were not mapped
-	traverseFields(
+	traverseDFS(
 		dstElem,
 		nil,
 		func(dstPath []string, dstField reflect.StructField, dstValue reflect.Value) bool {
@@ -269,6 +269,105 @@ func MapFields[S any, D any](
 			} else {
 				onUnusedDst(dstPath, dstValue)
 				return true // recurse
+			}
+		},
+	)
+
+	return nil
+}
+
+// mapFrom copies matching fields from src to dst (both must be pointers to structs).
+// MapFieldsWithTag maps fields from src to dst based on tags defined on the destination struct.
+//
+// By default, matches destination field name to source field name. If a destination field
+// has a `mapfrom:"FieldName"` tag, it maps from the specified source field instead.
+//
+// Fields are matched by name or tag and must have compatible types (either identical or assignable).
+// Nested fields are supported via dot-separated paths.
+//
+// Supports onUnusedSrc and onUnusedDst callbacks, which are invoked for unmapped source or
+// destination fields, respectively. These callbacks are useful for debugging, testing,
+// or enforcing strict field usage policies.
+func mapFrom[S any, D any](
+	src *S,
+	dst *D,
+	onUnusedSrc func(fieldPath []string, srcVal reflect.Value),
+	onUnusedDst func(fieldPath []string, dstVal reflect.Value),
+	maptag string,
+) error {
+
+	if onUnusedSrc == nil {
+		onUnusedSrc = func(_ []string, _ reflect.Value) {}
+	}
+	if onUnusedDst == nil {
+		onUnusedDst = func(_ []string, _ reflect.Value) {}
+	}
+
+	srcVal := reflect.ValueOf(src)
+	dstVal := reflect.ValueOf(dst)
+
+	if srcVal.Kind() != reflect.Ptr || dstVal.Kind() != reflect.Ptr {
+		return errors.New("both src and dst must be pointers")
+	}
+
+	srcElem := srcVal.Elem()
+	dstElem := dstVal.Elem()
+
+	if srcElem.Kind() != reflect.Struct || dstElem.Kind() != reflect.Struct {
+		return errors.New("both src and dst must point to structs")
+	}
+
+	mappedDstPaths := make(map[string]bool)
+	traverseDFS(
+		dstElem,
+		nil,
+		func(dstPath []string, dstField reflect.StructField, dstValue reflect.Value) bool {
+			srcTargetPath := joinPath(dstPath) // default: same name
+
+			if tagVal, ok := dstField.Tag.Lookup(maptag); ok && tagVal != "" {
+				srcTargetPath = tagVal
+			}
+			sourcePath := splitPath(srcTargetPath)
+
+			srcValid, srcField, srcFieldVal := hasNestedFieldSlice(srcElem, sourcePath)
+
+			if !srcValid {
+				onUnusedDst(dstPath, dstValue)
+				return true // Recurse deeper
+			}
+			// Check type compatibility
+			if dstField.Type != srcField.Type && !srcFieldVal.Type().AssignableTo(dstField.Type) {
+				onUnusedDst(dstPath, dstValue)
+				return true
+			}
+			if !dstValue.CanSet() {
+				onUnusedDst(dstPath, dstValue)
+				return true
+			}
+
+			// Perform mapping
+			err := setNestedField(dstVal, dstPath, srcFieldVal)
+			if err != nil {
+				onUnusedDst(dstPath, dstValue)
+				return false
+			}
+			markPathAndParents(mappedDstPaths, joinPath(dstPath))
+
+			return false
+		},
+	)
+
+	// Check src fields that were not mapped
+	traverseDFS(
+		srcElem,
+		nil,
+		func(srcPath []string, srcField reflect.StructField, srcValue reflect.Value) bool {
+			_, mapped := mappedDstPaths[joinPath(srcPath)]
+			if mapped {
+				return false
+			} else {
+				onUnusedSrc(srcPath, srcValue)
+				return true
 			}
 		},
 	)
