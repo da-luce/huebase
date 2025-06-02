@@ -262,3 +262,51 @@ func max(a, b int) int {
 	}
 	return b
 }
+
+// hasFieldByPath checks if a struct type t has a nested field path like "SpecialColors.Background".
+// Returns true if the full path exists, false otherwise.
+func hasFieldByPath(t reflect.Type, path string) bool {
+	parts := strings.Split(path, ".")
+
+	curr := t
+	for _, p := range parts {
+		if curr.Kind() == reflect.Ptr {
+			curr = curr.Elem()
+		}
+		if curr.Kind() != reflect.Struct {
+			return false
+		}
+
+		field, ok := curr.FieldByName(p)
+		if !ok {
+			return false
+		}
+		curr = field.Type
+	}
+	return true
+}
+
+// verifyAbstractTags checks that every 'abstract' tag in baseType
+// is a valid nested field path in abstractType.
+func verifyAbstractTags(t *testing.T, baseType, abstractType reflect.Type) {
+	t.Helper()
+
+	for i := 0; i < baseType.NumField(); i++ {
+		field := baseType.Field(i)
+		abstractTag := field.Tag.Get("abstract")
+		if abstractTag == "" {
+			continue // no abstract tag to check
+		}
+
+		if !hasFieldByPath(abstractType, abstractTag) {
+			t.Errorf("Invalid abstract tag %q on field %q: no such nested field in %s", abstractTag, field.Name, abstractType.Name())
+		}
+	}
+}
+
+func TestAbstractTags(t *testing.T) {
+	baseType := reflect.TypeOf(Base16Scheme{})
+	abstractType := reflect.TypeOf(AbstractScheme{})
+
+	verifyAbstractTags(t, baseType, abstractType)
+}
