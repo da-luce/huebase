@@ -104,33 +104,33 @@ func verifyMappingString(sourceType, destType reflect.Type, yamlStr string) erro
 // -----------------------------------------------------------------------------
 
 // Minimal structs for testing
-type Base16Scheme struct {
-	Base00 *string
-	Base01 *string
+type Source struct {
+	A *string
+	B *string
 }
 
-type AbstractScheme struct {
-	SpecialColors struct {
-		Background *string
-		Selection  *string
+type Dest struct {
+	Group1 struct {
+		A *string
+		B *string
 	}
-	AnsiColors struct {
-		Black *string
+	Group2 struct {
+		C *string
 	}
 }
 
 // Minimal YAML mapping string for test
 const minimalYAML = `
-Base00:
-  - SpecialColors.Background
-  - AnsiColors.Black
-Base01:
-  - SpecialColors.Selection
+A:
+  - Group1.A
+  - Group2.C
+B:
+  - Group1.B
 `
 
 func TestHasFieldByPath(t *testing.T) {
-	typBase16 := reflect.TypeOf(Base16Scheme{})
-	typAbstract := reflect.TypeOf(AbstractScheme{})
+	typSource := reflect.TypeOf(Source{})
+	typDest := reflect.TypeOf(Dest{})
 
 	tests := []struct {
 		typ      reflect.Type
@@ -138,19 +138,19 @@ func TestHasFieldByPath(t *testing.T) {
 		expected bool
 	}{
 		// Base16Scheme top-level keys
-		{typBase16, "Base00", true},
-		{typBase16, "Base01", true},
-		{typBase16, "Base02", false},
+		{typSource, "A", true},
+		{typSource, "B", true},
+		{typSource, "Z", false},
 
 		// AbstractScheme nested keys
-		{typAbstract, "SpecialColors.Background", true},
-		{typAbstract, "SpecialColors.Selection", true},
-		{typAbstract, "AnsiColors.Black", true},
+		{typDest, "Group1.A", true},
+		{typDest, "Group1.B", true},
+		{typDest, "Group2.C", true},
 
 		// Invalid paths
-		{typAbstract, "SpecialColors.Missing", false},
-		{typAbstract, "AnsiColors.White", false},
-		{typAbstract, "SpecialColors.Background.Extra", false},
+		{typDest, "Group3.A", false},
+		{typDest, "Group1.C", false},
+		{typDest, "Group1.A.B", false},
 	}
 
 	for _, tt := range tests {
@@ -172,16 +172,16 @@ func TestLoadYAMLKeysAndValuesFromString(t *testing.T) {
 		{
 			name: "minimal",
 			yamlInput: `
-Base00:
-  - SpecialColors.Background
-  - AnsiColors.Black
-Base01:
-  - SpecialColors.Selection
+A:
+  - Group1.A
+  - Group1.B
+B:
+  - Group2.C
 `,
-			wantKeys: []string{"Base00", "Base01"},
+			wantKeys: []string{"A", "B"},
 			wantVals: [][]string{
-				{"SpecialColors.Background", "AnsiColors.Black"},
-				{"SpecialColors.Selection"},
+				{"Group1.A", "Group1.B"},
+				{"Group2.C"},
 			},
 		},
 	}
@@ -222,23 +222,6 @@ Base01:
 }
 
 func TestValidateFieldPaths(t *testing.T) {
-	type Base16Scheme struct {
-		Base00 *string
-		Base01 *string
-	}
-
-	type AbstractScheme struct {
-		SpecialColors struct {
-			Background *string
-			Selection  *string
-		}
-		AnsiColors struct {
-			Black *string
-		}
-	}
-
-	abstractType := reflect.TypeOf(AbstractScheme{})
-
 	tests := []struct {
 		name    string
 		paths   []string
@@ -247,23 +230,23 @@ func TestValidateFieldPaths(t *testing.T) {
 		{
 			name: "all valid paths",
 			paths: []string{
-				"SpecialColors.Background",
-				"SpecialColors.Selection",
-				"AnsiColors.Black",
+				"Group1.A",
+				"Group1.B",
+				"Group2.C",
 			},
 			wantBad: nil,
 		},
 		{
 			name: "some invalid paths",
 			paths: []string{
-				"SpecialColors.Background",
-				"AnsiColors.White",   // invalid - not in struct
-				"BasicScope.Comment", // invalid - not in struct
-				"AnsiColors.Black",
+				"Group1.A",
+				"Group3",   // invalid - not in struct
+				"Group3.A", // invalid - not in struct
+				"Group2.C",
 			},
 			wantBad: []string{
-				"AnsiColors.White",
-				"BasicScope.Comment",
+				"Group3",
+				"Group3.A",
 			},
 		},
 		{
@@ -286,7 +269,7 @@ func TestValidateFieldPaths(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotBad := validateFieldPaths(abstractType, tt.paths)
+			gotBad := validateFieldPaths(reflect.TypeOf(Dest{}), tt.paths)
 
 			if len(gotBad) != len(tt.wantBad) {
 				t.Fatalf("unexpected number of invalid paths: got %v, want %v", gotBad, tt.wantBad)
@@ -306,8 +289,8 @@ func TestValidateFieldPaths(t *testing.T) {
 }
 
 func TestVerifyMappingString(t *testing.T) {
-	sourceType := reflect.TypeOf(Base16Scheme{})
-	destType := reflect.TypeOf(AbstractScheme{})
+	sourceType := reflect.TypeOf(Source{})
+	destType := reflect.TypeOf(Dest{})
 
 	err := verifyMappingString(sourceType, destType, minimalYAML)
 	if err != nil {
