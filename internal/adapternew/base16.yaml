@@ -1,0 +1,39 @@
+Base00:
+    - SpecialColors.Background
+    - AnsiColors.Black
+Base01:
+    - ScopeColors.Editor.LineNumbers
+    - AnsiColors.BrightBlack
+Base02:
+    - SpecialColors.Selection
+    - ScopeColors.Miscellaneous.Annotation
+Base03:
+    - ScopeColors.Basic.Comment
+    - ScopeColors.Editor.Highlight
+Base04:
+    - ScopeColors.Editor.LineNumbers
+    - AnsiColors.White
+Base05:
+    - ScopeColors.Miscellaneous.Foreground
+    - AnsiColors.White
+Base06:
+    - SpecialColors.ForegroundBright
+Base07:
+    - AnsiColors.BrightWhite
+Base08:
+    - ScopeColors.Basic.Variable
+    - ScopeColors.Markup.Link
+Base09:
+    - ScopeColors.Advanced.Attribute
+Base0A:
+    - ScopeColors.Advanced.Class
+Base0B:
+    - ScopeColors.Basic.String
+Base0C:
+    - ScopeColors.Miscellaneous.Regex
+Base0D:
+    - ScopeColors.Basic.Function
+Base0E:
+    - ScopeColors.Basic.Keyword
+Base0F:
+    - ScopeColors.Diagnostics.Deprecated

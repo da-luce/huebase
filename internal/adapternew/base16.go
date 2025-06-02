@@ -1,4 +1,4 @@
-package adapters
+package adapternew
 
 import (
 	"gopkg.in/yaml.v3"
@@ -33,11 +33,10 @@ func (rw *Base16Scheme) FromString(input string) error {
 	return nil
 }
 
-func (rw *Base16Scheme) ToString() (string, error) {
-	// Marshal the Base16Scheme struct to a YAML string
-	data, err := yaml.Marshal(rw)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
+func (rw *Base16Scheme) MappingPath() string {
+	return "./base16.yaml"
+}
+
+func (rw *Base16Scheme) TemplatePath() string {
+	return "../templates/base16.yaml"
 }
