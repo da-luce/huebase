@@ -1,11 +1,13 @@
 package adapter
 
 import (
+	"math/rand"
 	"os"
 	"testing"
 
 	"reflect"
 
+	"github.com/da-luce/huebase/internal/color"
 	"github.com/da-luce/huebase/internal/fieldmap"
 )
 
@@ -38,26 +40,35 @@ func checkAllFieldsSet(t *testing.T, v interface{}) {
 	}
 }
 
+func randomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
 func fillDummyScheme(a Adapter) {
 	val := reflect.ValueOf(a).Elem()
 	for i := 0; i < val.NumField(); i++ {
 		field := val.Field(i)
 		if field.Kind() == reflect.Ptr && field.IsNil() {
-			// Assume pointer to string for simplicity here, replace with correct type if needed
-			// For *Color, you'd create a dummy Color struct pointer instead
 			fieldType := field.Type().Elem()
 
-			switch fieldType.Kind() {
-			case reflect.String:
-				dummy := "dummy"
-				field.Set(reflect.ValueOf(&dummy))
-			case reflect.Struct:
-				// If *Color or any struct pointer
+			switch fieldType.Name() {
+			case "Color":
+				randomColor := color.RandomColor()
+				ptr := reflect.New(fieldType)
+				ptr.Elem().Set(reflect.ValueOf(randomColor))
+				field.Set(ptr)
+			case "string":
+				randStr := randomString(8) // 8 char random string
+				field.Set(reflect.ValueOf(&randStr))
+			default:
+				// For other struct pointers, create zero value pointer
 				ptr := reflect.New(fieldType)
 				field.Set(ptr)
-			// add more cases as needed
-			default:
-				// Skip or add default initialization here if you want
 			}
 		}
 	}

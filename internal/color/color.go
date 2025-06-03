@@ -2,7 +2,10 @@ package color
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
+	"sync"
+	"time"
 )
 
 // Color represents a color with RGBA components.
@@ -150,4 +153,27 @@ func (c *Color) MarshalText() (text []byte, err error) {
 // MarshalTOML allows TOML to serialize the Color type.
 func (c Color) MarshalTOML() ([]byte, error) {
 	return []byte(fmt.Sprintf("\"%s\"", c.ToHex(true))), nil
+}
+
+var (
+	rnd  *rand.Rand
+	once sync.Once
+)
+
+func getRand() *rand.Rand {
+	once.Do(func() {
+		rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+	})
+	return rnd
+}
+
+// RandomColor returns a random opaque Color.
+func RandomColor() Color {
+	r := getRand()
+	return Color{
+		Red:   r.Float64(),
+		Green: r.Float64(),
+		Blue:  r.Float64(),
+		Alpha: 1.0,
+	}
 }
