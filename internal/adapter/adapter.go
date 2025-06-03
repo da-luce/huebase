@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"reflect"
 
 	"github.com/da-luce/huebase/internal/color"
 	"github.com/da-luce/huebase/internal/fieldmap"
@@ -196,6 +197,44 @@ func ConvertTheme(input string, reader Adapter, writer Adapter) (string, error) 
 	}
 
 	return outputBuf.String(), nil
+}
+
+// FieldSimilarity compares two structs and returns the ratio of matching pointer field values,
+// counting all fields where at least one side is set (non-nil).
+func FieldSimilarity(a, b interface{}) float64 {
+	va := reflect.ValueOf(a).Elem()
+	vb := reflect.ValueOf(b).Elem()
+
+	if va.Type() != vb.Type() {
+		return 0.0
+	}
+
+	total := 0
+	matching := 0
+
+	for i := 0; i < va.NumField(); i++ {
+		fa := va.Field(i)
+		fb := vb.Field(i)
+
+		if fa.Kind() != reflect.Ptr || fb.Kind() != reflect.Ptr {
+			continue // skip non-pointer fields
+		}
+
+		// Count this field if either side is non-nil
+		if !fa.IsNil() || !fb.IsNil() {
+			total++
+
+			// Count as match only if both are non-nil and deeply equal
+			if !fa.IsNil() && !fb.IsNil() && reflect.DeepEqual(fa.Interface(), fb.Interface()) {
+				matching++
+			}
+		}
+	}
+
+	if total == 0 {
+		return 0.0
+	}
+	return float64(matching) / float64(total)
 }
 
 // // ToAbstract converts an Adapter interface implementation into an AbstractScheme.

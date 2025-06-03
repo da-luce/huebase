@@ -28,6 +28,14 @@ func main() {
 
 	log.SetLevel(log.InfoLevel)
 
+	// Log the received CLI arguments
+	log.WithFields(log.Fields{
+		"inputFile":    *inputFile,
+		"outputFile":   *outputFile,
+		"inputFormat":  *inputFormat,
+		"outputFormat": *outputFormat,
+	}).Info("CLI arguments parsed")
+
 	// Validate required arguments
 	if *inputFile == "" || *inputFormat == "" || *outputFormat == "" {
 		fmt.Println("Error: Missing required arguments")
