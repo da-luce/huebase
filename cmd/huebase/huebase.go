@@ -3,22 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 
+	"github.com/da-luce/huebase/internal/adapter"
 	log "github.com/sirupsen/logrus"
-
-	"github.com/da-luce/huebase/internal/adapters"
 )
 
-var schemes = map[string]adapters.Adapter{
-	"base16":           &adapters.Base16Scheme{},
-	"16":               &adapters.Base16Scheme{},
-	"alacritty":        &adapters.AlacrittyScheme{},
-	"windows_terminal": &adapters.WindowsTerminalScheme{},
-	"wt":               &adapters.WindowsTerminalScheme{},
-	"gogh":             &adapters.GoghScheme{},
-	"iterm":            &adapters.ItermScheme{},
+var schemes = map[string]adapter.Adapter{}
+
+func init() {
+	for _, adapter := range adapter.Adapters {
+		schemes[adapter.Name()] = adapter
+	}
 }
 
 func main() {
@@ -51,14 +47,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	data, err := ioutil.ReadFile(*inputFile)
+	data, err := os.ReadFile(*inputFile)
 	if err != nil {
 		fmt.Printf("Failed to read input file: %v", err)
 		os.Exit(1)
 	}
 
 	// Perform the conversion
-	outputData, err := adapters.ConvertTheme(string(data), reader, writer)
+	outputData, err := adapter.ConvertTheme(string(data), reader, writer)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		os.Exit(1)
@@ -66,7 +62,7 @@ func main() {
 
 	// Write to output file if specified, else print to stdout
 	if *outputFile != "" {
-		err = ioutil.WriteFile(*outputFile, []byte(outputData), 0644)
+		err = os.WriteFile(*outputFile, []byte(outputData), 0644)
 		if err != nil {
 			fmt.Printf("Error writing to output file: %v\n", err)
 			os.Exit(1)
