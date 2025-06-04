@@ -69,29 +69,30 @@ func hasNestedFieldSlice(structValue reflect.Value, path []string) (bool, reflec
 			return false, reflect.StructField{}, reflect.Value{}
 		}
 
-		// Dereference pointers
-		for fieldVal.Kind() == reflect.Ptr {
-			if fieldVal.IsNil() {
-				return false, reflect.StructField{}, reflect.Value{}
+		// Only dereference if not the last element in the path
+		if i < len(path)-1 {
+			for fieldVal.Kind() == reflect.Ptr {
+				if fieldVal.IsNil() {
+					return false, reflect.StructField{}, reflect.Value{}
+				}
+				fieldVal = fieldVal.Elem()
 			}
-			fieldVal = fieldVal.Elem()
 		}
 
 		currVal = fieldVal
 		currType = fieldVal.Type()
 
-		// If not last element, must be struct to continue deeper
+		// If not last element, must be struct to continue
 		if i < len(path)-1 && currVal.Kind() != reflect.Struct {
 			return false, reflect.StructField{}, reflect.Value{}
 		}
 
-		// At last iteration, return result
+		// On last element, return the field
 		if i == len(path)-1 {
 			return true, field, currVal
 		}
 	}
 
-	// Defensive fallback (shouldn't reach here)
 	return false, reflect.StructField{}, reflect.Value{}
 }
 

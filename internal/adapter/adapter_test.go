@@ -2,99 +2,20 @@ package adapter
 
 import (
 	"math/rand"
-	"os"
 	"testing"
 
 	"reflect"
 
 	"github.com/da-luce/huebase/internal/color"
-	"github.com/da-luce/huebase/internal/fieldmap"
 )
 
 func TestAllAdapters(t *testing.T) {
 	for _, ad := range Adapters {
 		t.Run(ad.Name(), func(t *testing.T) {
-			t.Run("VerifyAllSchemeMappings", func(t *testing.T) {
-				testVerifyAllSchemeMappings(t, ad)
-			})
-			t.Run("AllConcreteFieldsAreMapped", func(t *testing.T) {
-				testAllConcreteFieldsAreMapped(t, ad)
-			})
-			t.Run("AllAbstractFieldsAreCoveredInMapping", func(t *testing.T) {
-				testAllAbstractFieldsAreCoveredInMapping(t, ad)
-			})
 			t.Run("TransitiveProperty", func(t *testing.T) {
 				testTransitiveProperty(t, ad, 0.9)
 			})
 		})
-	}
-}
-
-func testVerifyAllSchemeMappings(t *testing.T, ad Adapter) {
-	data, err := os.ReadFile(ad.MappingPath())
-	if err != nil {
-		t.Errorf("Failed to read %s: %v", ad.MappingPath(), err)
-	}
-	err = fieldmap.VerifyMappingString(
-		reflect.TypeOf(ad).Elem(),
-		reflect.TypeOf(AbstractScheme{}),
-		string(data),
-	)
-	if err != nil {
-		t.Errorf("Verification failed for %s: %v", ad.MappingPath(), err)
-	}
-}
-
-func testAllConcreteFieldsAreMapped(t *testing.T, ad Adapter) {
-	data, err := os.ReadFile(ad.MappingPath())
-	if err != nil {
-		t.Errorf("Failed to read mapping file for adapter %s: %v", ad.Name(), err)
-	}
-
-	mapping, err := fieldmap.LoadMappingFromString(string(data))
-	if err != nil {
-		t.Errorf("Failed to load mapping for adapter %s: %v", ad.Name(), err)
-	}
-
-	mappedFields := map[string]bool{}
-	for key := range mapping {
-		mappedFields[key] = true
-	}
-
-	schemeType := reflect.TypeOf(ad).Elem()
-	for i := 0; i < schemeType.NumField(); i++ {
-		fieldName := schemeType.Field(i).Name
-		if _, found := mappedFields[fieldName]; !found {
-			t.Errorf("Field %s in %s is not represented in the mapping keys", fieldName, ad.Name())
-		}
-	}
-}
-
-func testAllAbstractFieldsAreCoveredInMapping(t *testing.T, ad Adapter) {
-	data, err := os.ReadFile(ad.MappingPath())
-	if err != nil {
-		t.Errorf("Failed to read mapping file for adapter %s: %v", ad.Name(), err)
-	}
-
-	mapping, err := fieldmap.LoadMappingFromString(string(data))
-	if err != nil {
-		t.Errorf("Failed to load mapping for adapter %s: %v", ad.Name(), err)
-	}
-
-	// Collect all used abstract fields
-	used := map[string]bool{}
-	for _, abstractFields := range mapping {
-		for _, name := range abstractFields {
-			used[name] = true
-		}
-	}
-
-	absType := reflect.TypeOf(AbstractScheme{})
-	for i := 0; i < absType.NumField(); i++ {
-		absField := absType.Field(i).Name
-		if !used[absField] {
-			t.Errorf("Abstract field %s not covered in mapping values for adapter %s", absField, ad.Name())
-		}
 	}
 }
 
@@ -144,7 +65,6 @@ func fillDummyScheme(a Adapter) {
 }
 
 func testTransitiveProperty(t *testing.T, ad Adapter, simThresh float64) {
-
 	// Create new instance of adapter type
 	schemeVal := reflect.New(reflect.TypeOf(ad).Elem())
 	scheme := schemeVal.Interface().(Adapter)
@@ -152,29 +72,14 @@ func testTransitiveProperty(t *testing.T, ad Adapter, simThresh float64) {
 	// Fill dummy data so all pointer fields are non-nil
 	fillDummyScheme(scheme)
 
-	// Load mapping file
-	mappingData, err := os.ReadFile(scheme.MappingPath())
-	if err != nil {
-		t.Fatalf("Failed to read mapping for %T: %v", scheme, err)
-	}
-	mapping, err := fieldmap.LoadMappingFromString(string(mappingData))
-	if err != nil {
-		t.Fatalf("Failed to load mapping for %T: %v", scheme, err)
-	}
-
-	// Convert scheme -> AbstractScheme
-	abstract := &AbstractScheme{}
-	err = fieldmap.ApplySourceToDestMapping(scheme, abstract, mapping)
-	if err != nil {
-		t.Fatalf("Failed to map source to abstract for %T: %v", scheme, err)
-	}
-
-	// Convert AbstractScheme -> scheme
+	// Create another new instance of adapter type for output
 	newSchemeVal := reflect.New(reflect.TypeOf(ad).Elem())
 	newScheme := newSchemeVal.Interface().(Adapter)
-	err = fieldmap.ApplyDestToSourceMapping(abstract, newScheme, mapping)
+
+	// Run the adapter mapping: scheme -> abstract -> newScheme
+	err := adaptScheme(scheme, newScheme) // <-- no & here
 	if err != nil {
-		t.Fatalf("Failed to map abstract back to source for %T: %v", scheme, err)
+		t.Fatalf("Failed to adapt scheme transitive property for %T: %v", scheme, err)
 	}
 
 	// Check that all pointer fields in newScheme are non-nil

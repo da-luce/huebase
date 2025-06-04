@@ -27,7 +27,7 @@ func TestMapInto_CorrectTag(t *testing.T) {
 	user := User{Name: "Alice", Email: "alice@example.com", Age: 30, Location: "HQ"}
 	emp := Employee{ID: "E123"}
 
-	err := mapInto(&user, &emp, nil, nil, "map")
+	err := MapInto(&user, &emp, nil, nil, "map")
 	if err != nil {
 		t.Fatalf("MapInto returned error: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestMapInto_IncorrectTag(t *testing.T) {
 	user := User{Name: "Alice", Email: "alice@example.com", Age: 30, Location: "HQ"}
 	emp := Employee{ID: "E123"}
 
-	err := mapInto(&user, &emp, nil, nil, "incorrecttag")
+	err := MapInto(&user, &emp, nil, nil, "incorrect tag")
 	if err != nil {
 		t.Fatalf("MapInto returned error: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestMapFrom_CorrectTag(t *testing.T) {
 	user := User{Name: "Alice", Email: "alice@example.com", Age: 30, Location: "HQ"}
 	emp := Employee{Name: "Bob", ContactEmail: "bob@example.com", ID: "E123", Office: "Remote"}
 
-	err := mapFrom(&emp, &user, nil, nil, "map")
+	err := MapFrom(&emp, &user, nil, nil, "map")
 	if err != nil {
 		t.Fatalf("mapFrom returned error: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestMapFrom_IncorrectTag(t *testing.T) {
 	emp := Employee{Name: "Bob", ContactEmail: "bob@example.com", ID: "E123", Office: "Remote"}
 
 	// Using a wrong tag name means no mapping happens for tagged fields
-	err := mapFrom(&emp, &user, nil, nil, "incorrecttag")
+	err := MapFrom(&emp, &user, nil, nil, "incorrecttag")
 	if err != nil {
 		t.Fatalf("mapFrom returned error: %v", err)
 	}
@@ -162,7 +162,7 @@ func TestMapInto_BasicMapping(t *testing.T) {
 	var unusedSrcFields [][]string
 	var unusedDstFields [][]string
 
-	err := mapInto(src, dst,
+	err := MapInto(src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrcFields = append(unusedSrcFields, path)
 		},
@@ -207,7 +207,7 @@ func TestMapInto_UnusedFields(t *testing.T) {
 	var unusedSrc [][]string
 	var unusedDst [][]string
 
-	err := mapInto(src, dst,
+	err := MapInto(src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrc = append(unusedSrc, path)
 		},
@@ -248,7 +248,7 @@ func TestMapFrom_BasicMapping(t *testing.T) {
 	var unusedSrcFields [][]string
 	var unusedDstFields [][]string
 
-	err := mapFrom(src, dst,
+	err := MapFrom(src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrcFields = append(unusedSrcFields, path)
 		},
@@ -293,7 +293,7 @@ func TestMapFrom_UnusedFields(t *testing.T) {
 	var unusedSrc [][]string
 	var unusedDst [][]string
 
-	err := mapFrom(src, dst,
+	err := MapFrom(src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrc = append(unusedSrc, path)
 		},
@@ -340,7 +340,7 @@ type NestedStruct struct {
 }
 
 type SubNestedStruct struct {
-	H string
+	H *string
 	I SubSubNestedStruct
 }
 
@@ -361,7 +361,7 @@ func newTestStruct() Struct {
 			E: "e",
 			F: "f",
 			G: SubNestedStruct{
-				H: "h",
+				H: nil, // Testing nil is important!
 				I: SubSubNestedStruct{
 					J: SubSubSubNestedStruct{
 						I: "deep",
@@ -398,6 +398,13 @@ func TestHasNestedFieldSlice(t *testing.T) {
 			wantFound: true,
 			wantValue: "e",
 		},
+		// Important regression test!
+		{
+			name:      "Nested field D.G.H",
+			path:      []string{"D", "G", "H"},
+			wantFound: true,
+			wantValue: nil,
+		},
 		{
 			name:      "Deeply nested field D.G.I.J.I",
 			path:      []string{"D", "G", "I", "J", "I"},
@@ -427,8 +434,12 @@ func TestHasNestedFieldSlice(t *testing.T) {
 			if found != tc.wantFound {
 				t.Errorf("expected found=%v, got %v", tc.wantFound, found)
 			}
-			if found && val.Interface() != tc.wantValue {
-				t.Errorf("expected value=%v, got %v", tc.wantValue, val.Interface())
+			if found {
+				if val.Kind() == reflect.Ptr && val.IsNil() {
+					// ok
+				} else if val.Interface() != tc.wantValue {
+					t.Errorf("expected value=%v, got %v", tc.wantValue, val.Interface())
+				}
 			}
 		})
 	}

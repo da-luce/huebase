@@ -1,28 +1,46 @@
 package adapter
 
 import (
+	"github.com/da-luce/huebase/internal/objectmap"
 	"gopkg.in/yaml.v3"
 )
 
 type Base16Scheme struct {
-	Scheme *string `yaml:"scheme"`
-	Author *string `yaml:"author"`
-	Base00 *Color  `yaml:"base00"`
-	Base01 *Color  `yaml:"base01"`
-	Base02 *Color  `yaml:"base02"`
-	Base03 *Color  `yaml:"base03"`
-	Base04 *Color  `yaml:"base04"`
-	Base05 *Color  `yaml:"base05"`
-	Base06 *Color  `yaml:"base06"`
-	Base07 *Color  `yaml:"base07"`
-	Base08 *Color  `yaml:"base08"`
-	Base09 *Color  `yaml:"base09"`
-	Base0A *Color  `yaml:"base0A"`
-	Base0B *Color  `yaml:"base0B"`
-	Base0C *Color  `yaml:"base0C"`
-	Base0D *Color  `yaml:"base0D"`
-	Base0E *Color  `yaml:"base0E"`
-	Base0F *Color  `yaml:"base0F"`
+	Scheme *string `yaml:"scheme" abstract:"Metadata.Name"`
+	Author *string `yaml:"author" abstract:"Metadata.Author"`
+	Base00 *Color  `yaml:"base00" abstract:"SpecialColors.Background"`
+	Base01 *Color  `yaml:"base01" abstract:"SpecialColors.Selection"`
+	Base02 *Color  `yaml:"base02" abstract:"SpecialColors.Cursor"`
+	Base03 *Color  `yaml:"base03" abstract:"SpecialColors.CursorText"`
+	Base04 *Color  `yaml:"base04" abstract:"SpecialColors.SelectedText"`
+	Base05 *Color  `yaml:"base05" abstract:"SpecialColors.Foreground"`
+	Base06 *Color  `yaml:"base06" abstract:"SpecialColors.ForegroundBright"`
+	Base07 *Color  `yaml:"base07" abstract:"AnsiColors.White"`
+	Base08 *Color  `yaml:"base08" abstract:"AnsiColors.Red"`
+	Base09 *Color  `yaml:"base09" abstract:"AnsiColors.Yellow"`
+	Base0A *Color  `yaml:"base0A" abstract:"AnsiColors.Blue"`
+	Base0B *Color  `yaml:"base0B" abstract:"AnsiColors.Green"`
+	Base0C *Color  `yaml:"base0C" abstract:"AnsiColors.Cyan"`
+	Base0D *Color  `yaml:"base0D" abstract:"AnsiColors.BrightBlue"`
+	Base0E *Color  `yaml:"base0E" abstract:"AnsiColors.Magenta"`
+	Base0F *Color  `yaml:"base0F" abstract:"AnsiColors.BrightMagenta"`
+}
+
+func (rw *Base16Scheme) Name() string {
+	return "base16"
+}
+
+func (rw *Base16Scheme) toAbstract() (*AbstractScheme, error) {
+	var abs AbstractScheme
+	err := objectmap.MapInto(rw, &abs, nil, nil, "abstract")
+	if err != nil {
+		return nil, err
+	}
+	return &abs, nil
+}
+
+func (rw *Base16Scheme) fromAbstract(abs *AbstractScheme) error {
+	return objectmap.MapFrom(rw, abs, nil, nil, "abstract")
 }
 
 func (rw *Base16Scheme) FromString(input string) error {
@@ -33,14 +51,6 @@ func (rw *Base16Scheme) FromString(input string) error {
 	return nil
 }
 
-func (rw *Base16Scheme) MappingPath() string {
-	return "./base16.yaml"
-}
-
 func (rw *Base16Scheme) TemplatePath() string {
-	return "../templates/base16.yaml"
-}
-
-func (rw *Base16Scheme) Name() string {
-	return "base16"
+	return "../templates/base16.tmpl"
 }
