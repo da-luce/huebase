@@ -319,6 +319,8 @@ func MapFrom[S any, D any](
 	}
 
 	mappedDstPaths := make(map[string]bool)
+
+	// Traverse destination to fill it from source
 	traverseDFS(
 		dstElem,
 		nil,
@@ -330,48 +332,71 @@ func MapFrom[S any, D any](
 			}
 			sourcePath := splitPath(srcTargetPath)
 
-			srcValid, srcField, srcFieldVal := hasNestedFieldSlice(srcElem, sourcePath)
-
+			srcValid, _, srcFieldVal := hasNestedFieldSlice(srcElem, sourcePath)
 			if !srcValid {
-				onUnusedDst(dstPath, dstValue)
-				return true // Recurse deeper
-			}
-			// Check type compatibility
-			if dstField.Type != srcField.Type && !srcFieldVal.Type().AssignableTo(dstField.Type) {
 				onUnusedDst(dstPath, dstValue)
 				return true
 			}
+
+			// Normalize for assignment (handle *T → T, T → *T)
+			normalizedVal, ok := normalizeForAssignment(srcFieldVal, dstField.Type)
+			if !ok {
+				onUnusedDst(dstPath, dstValue)
+				return true
+			}
+
 			if !dstValue.CanSet() {
 				onUnusedDst(dstPath, dstValue)
 				return true
 			}
 
-			// Perform mapping
-			err := setNestedField(dstVal, dstPath, srcFieldVal)
+			err := setNestedField(dstVal, dstPath, normalizedVal)
 			if err != nil {
 				onUnusedDst(dstPath, dstValue)
 				return false
 			}
-			markPathAndParents(mappedDstPaths, joinPath(dstPath))
 
+			markPathAndParents(mappedDstPaths, joinPath(dstPath))
 			return false
 		},
 	)
 
-	// Check src fields that were not mapped
+	// Track unused source fields
 	traverseDFS(
 		srcElem,
 		nil,
 		func(srcPath []string, srcField reflect.StructField, srcValue reflect.Value) bool {
 			_, mapped := mappedDstPaths[joinPath(srcPath)]
-			if mapped {
-				return false
-			} else {
+			if !mapped {
 				onUnusedSrc(srcPath, srcValue)
-				return true
 			}
+			return true
 		},
 	)
 
 	return nil
+}
+
+// normalizeForAssignment attempts to prepare a src value for assignment into dstType.
+//
+// - Handles pointer dereference (*T → T)
+// - Optionally handles value → pointer (T → *T, with auto-allocation)
+func normalizeForAssignment(srcVal reflect.Value, dstType reflect.Type) (reflect.Value, bool) {
+	// Dereference pointer if necessary
+	if srcVal.Kind() == reflect.Ptr && !srcVal.IsNil() {
+		srcVal = srcVal.Elem()
+	}
+
+	if srcVal.Type().AssignableTo(dstType) {
+		return srcVal, true
+	}
+
+	// Optional: support T → *T
+	if dstType.Kind() == reflect.Ptr && srcVal.Type().AssignableTo(dstType.Elem()) {
+		ptr := reflect.New(dstType.Elem())
+		ptr.Elem().Set(srcVal)
+		return ptr, true
+	}
+
+	return reflect.Value{}, false
 }
