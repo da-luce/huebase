@@ -1,4 +1,7 @@
-# 🎨 HueBase
+<h1>
+  paletteport
+  <img src="./media/ship.png" alt="Description" height="50" style="vertical-align: bottom;" />
+</h1>
 
 * CLI tool to view and convert colorschemes for terminals, IDEs, etc.
 * A library of popular colorschemes across various tools (think [Repology](https://repology.org/) but for themes!)
@@ -44,3 +47,4 @@ field to fill it's place.
 * palettr
 * gotone
 * goglow
+* PalettePort (put color palette on a pallet?)
