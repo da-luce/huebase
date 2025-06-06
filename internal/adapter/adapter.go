@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"reflect"
 
 	"github.com/da-luce/huebase/internal/color"
+	"github.com/da-luce/huebase/templates"
 )
 
 type LogLevel = int
@@ -21,12 +21,16 @@ const (
 
 // Scheme adapter structs must implement this interface for reading and writing
 // to text
+// Yes, it would be nice to enforce all Adapters be structs so that we can handle
+// the mapping with the objectmap functionality (more control over missing src and dst fields)
+// BUT, we can't call objectmap when doing that (complains about not knowing about type of thing)
+// Also, goes against the grain of go... not idiomatic and would likely introduce future problems
 type Adapter interface {
 	Name() string // Return shorthand name
 	toAbstract() (*AbstractScheme, error)
 	fromAbstract(a *AbstractScheme) error
 	FromString(input string) error // Parse input text into the adapter's struct
-	TemplatePath() string          // Return path to the output generation template file
+	TemplateName() string          // Return path to the output generation template file
 }
 
 // List of registered adapters
@@ -154,42 +158,44 @@ func adaptScheme(reader Adapter, writer Adapter) error {
 	fillUnsetInGroups(abstractTheme)
 
 	// Convert abstract scheme back to writer adapter
-	err = writer.fromAbstract(abstractTheme)
-	if err != nil {
+	if err := writer.fromAbstract(abstractTheme); err != nil {
 		return fmt.Errorf("failed to convert abstract to writer: %w", err)
 	}
 
 	return nil
 }
 
+// Renders an Adapter to a string using its TemplatePath.
+func RenderAdapterToString(a Adapter) (string, error) {
+	templateFile := a.TemplateName()
+	tmplData, err := templates.FS.ReadFile(templateFile)
+	if err != nil {
+		return "", err
+	}
+
+	tmpl, err := template.New("out").Parse(string(tmplData))
+	if err != nil {
+		return "", err
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, a); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 func ConvertTheme[S Adapter, W Adapter](input string, reader S, writer W) (string, error) {
-	// Parse input string into reader's struct
 	if err := reader.FromString(input); err != nil {
 		return "", fmt.Errorf("failed to parse input file: %w", err)
 	}
 
-	// Apply conversion
-	adaptScheme(reader, writer)
-
-	// Load and parse the output template file
-	tmplPath := writer.TemplatePath()
-	tmplData, err := os.ReadFile(tmplPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read template file %s: %w", tmplPath, err)
+	if err := adaptScheme(reader, writer); err != nil {
+		return "", err
 	}
 
-	tmpl, err := template.New("output").Parse(string(tmplData))
-	if err != nil {
-		return "", fmt.Errorf("failed to parse template: %w", err)
-	}
-
-	// Render the template with writer data
-	var outputBuf bytes.Buffer
-	if err := tmpl.Execute(&outputBuf, writer); err != nil {
-		return "", fmt.Errorf("failed to execute template: %w", err)
-	}
-
-	return outputBuf.String(), nil
+	return RenderAdapterToString(writer)
 }
 
 // FieldSimilarity compares two structs and returns the ratio of matching pointer field values,

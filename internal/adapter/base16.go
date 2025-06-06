@@ -57,6 +57,6 @@ func (rw *Base16Scheme) FromString(input string) error {
 	return nil
 }
 
-func (rw *Base16Scheme) TemplatePath() string {
-	return "../templates/base16.tmpl"
+func (rw *Base16Scheme) TemplateName() string {
+	return "base16.tmpl"
 }

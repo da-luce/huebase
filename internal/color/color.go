@@ -177,3 +177,30 @@ func RandomColor() Color {
 		Alpha: 1.0,
 	}
 }
+
+func clampFloatToUint8(f float64) uint8 {
+	if f < 0 {
+		return 0
+	}
+	if f > 1 {
+		return 255
+	}
+	return uint8(f * 255)
+}
+
+func (c *Color) Hex() string {
+	r := clampFloatToUint8(c.Red)
+	g := clampFloatToUint8(c.Green)
+	b := clampFloatToUint8(c.Blue)
+	return fmt.Sprintf("#%02x%02x%02x", r, g, b)
+}
+
+func ColorsSimilar(c1, c2 Color, tol float64) bool {
+	dAlpha := c1.Alpha - c2.Alpha
+	dRed := c1.Red - c2.Red
+	dGreen := c1.Green - c2.Green
+	dBlue := c1.Blue - c2.Blue
+
+	distSq := dAlpha*dAlpha + dRed*dRed + dGreen*dGreen + dBlue*dBlue
+	return distSq <= tol*tol
+}
