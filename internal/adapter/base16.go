@@ -1,9 +1,7 @@
 package adapter
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/da-luce/huebase/internal/objectmap"
 	"gopkg.in/yaml.v3"
@@ -44,26 +42,10 @@ func (rw *Base16Scheme) toAbstract() (*AbstractScheme, error) {
 }
 
 func (rw *Base16Scheme) fromAbstract(abs *AbstractScheme) error {
-	// FIXME: this mapping does not work!
-	// Log input
-	if absJson, err := json.MarshalIndent(abs, "", "  "); err == nil {
-		fmt.Printf("DEBUG: AbstractScheme JSON:\n%s\n", string(absJson))
-	}
-
-	logUnused := func(path []string, val reflect.Value) {
-		fmt.Printf("UNUSED FIELD (src path: %v) = %v\n", path, val.Interface())
-	}
-
-	err := objectmap.MapFrom(rw, abs, logUnused, nil, "abstract")
+	err := objectmap.MapFrom(abs, rw, nil, nil, "abstract")
 	if err != nil {
 		return fmt.Errorf("map error: %w", err)
 	}
-
-	// Log result
-	if rwJson, err := json.MarshalIndent(rw, "", "  "); err == nil {
-		fmt.Printf("DEBUG: Base16Scheme JSON:\n%s\n", string(rwJson))
-	}
-
 	return nil
 }
 
