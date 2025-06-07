@@ -7,7 +7,7 @@ import (
 
 	"reflect"
 
-	"github.com/da-luce/huebase/internal/color"
+	"github.com/da-luce/paletteport/internal/color"
 )
 
 func TestAllAdapters(t *testing.T) {

@@ -1,4 +1,4 @@
-module github.com/da-luce/huebase
+module github.com/da-luce/paletteport
 
 go 1.21.4
 

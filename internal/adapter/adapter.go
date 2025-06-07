@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/da-luce/huebase/internal/color"
-	log "github.com/da-luce/huebase/internal/logger"
-	"github.com/da-luce/huebase/internal/objectmap"
-	"github.com/da-luce/huebase/templates"
+	"github.com/da-luce/paletteport/internal/color"
+	log "github.com/da-luce/paletteport/internal/logger"
+	"github.com/da-luce/paletteport/internal/objectmap"
+	"github.com/da-luce/paletteport/templates"
 )
 
 type LogLevel = int

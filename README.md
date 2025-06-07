@@ -17,7 +17,7 @@
 
 ## Considerations
 
-Obviously, converting color schemes will not be perfect. Some formats contain information that others don't, and thus most conversions will be lossy. Additionally, colors are can have slight to significant differences in interpretation between formats and even themes of the same format. Given all this, `huebase` simply aims to get you around 90% of the way there with only 10% of the effort of creating a scheme from scratch.
+Obviously, converting color schemes will not be perfect. Some formats contain information that others don't, and thus most conversions will be lossy. Additionally, colors are can have slight to significant differences in interpretation between formats and even themes of the same format. Given all this, `paletteport` simply aims to get you around 90% of the way there with only 10% of the effort of creating a scheme from scratch.
 
 ## Conversion Schema
 

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/da-luce/huebase/internal/objectmap"
+	"github.com/da-luce/paletteport/internal/objectmap"
 )
 
 type A struct {
