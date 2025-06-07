@@ -1,9 +1,6 @@
 package adapter
 
 import (
-	"fmt"
-
-	"github.com/da-luce/huebase/internal/objectmap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -32,21 +29,8 @@ func (rw *Base16Scheme) Name() string {
 	return "base16"
 }
 
-func (rw *Base16Scheme) toAbstract() (*AbstractScheme, error) {
-	var abs AbstractScheme
-	err := objectmap.MapInto(rw, &abs, nil, nil, "abstract")
-	if err != nil {
-		return nil, err
-	}
-	return &abs, nil
-}
-
-func (rw *Base16Scheme) fromAbstract(abs *AbstractScheme) error {
-	err := objectmap.MapFrom(abs, rw, nil, nil, "abstract")
-	if err != nil {
-		return fmt.Errorf("map error: %w", err)
-	}
-	return nil
+func (rw *Base16Scheme) TemplateName() string {
+	return "base16.tmpl"
 }
 
 func (rw *Base16Scheme) FromString(input string) error {
@@ -55,8 +39,4 @@ func (rw *Base16Scheme) FromString(input string) error {
 		return err
 	}
 	return nil
-}
-
-func (rw *Base16Scheme) TemplateName() string {
-	return "base16.tmpl"
 }

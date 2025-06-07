@@ -185,9 +185,9 @@ func markPathAndParents(mapped map[string]bool, path string) {
 // Supports onUnusedDst and onUnusedSrc callbacks.
 // The callback functions also add the ability to hook in very helpful behavior
 // for testing.
-func MapInto[S any, D any](
-	src *S,
-	dst *D,
+func MapInto(
+	src any,
+	dst any,
 	onUnusedSrc func(fieldPath []string, srcVal reflect.Value),
 	onUnusedDst func(fieldPath []string, dstVal reflect.Value),
 	maptag string,
@@ -289,9 +289,9 @@ func MapInto[S any, D any](
 // Supports onUnusedSrc and onUnusedDst callbacks, which are invoked for unmapped source or
 // destination fields, respectively. These callbacks are useful for debugging, testing,
 // or enforcing strict field usage policies.
-func MapFrom[S any, D any](
-	src *S,
-	dst *D,
+func MapFrom(
+	src any,
+	dst any,
 	onUnusedSrc func(fieldPath []string, srcVal reflect.Value),
 	onUnusedDst func(fieldPath []string, dstVal reflect.Value),
 	maptag string,
@@ -307,8 +307,8 @@ func MapFrom[S any, D any](
 	srcVal := reflect.ValueOf(src)
 	dstVal := reflect.ValueOf(dst)
 
-	if srcVal.Kind() != reflect.Ptr || dstVal.Kind() != reflect.Ptr {
-		return errors.New("both src and dst must be pointers")
+	if dstVal.Kind() != reflect.Ptr {
+		// WARN: changes won't take effect
 	}
 
 	srcElem := srcVal.Elem()

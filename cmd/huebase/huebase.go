@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/da-luce/huebase/internal/adapter"
-	log "github.com/sirupsen/logrus"
+	"github.com/da-luce/huebase/internal/logger"
 )
 
 var schemes = map[string]adapter.Adapter{}
@@ -26,15 +26,13 @@ func main() {
 
 	flag.Parse()
 
-	log.SetLevel(log.InfoLevel)
-
 	// Log the received CLI arguments
-	log.WithFields(log.Fields{
-		"inputFile":    *inputFile,
-		"outputFile":   *outputFile,
-		"inputFormat":  *inputFormat,
-		"outputFormat": *outputFormat,
-	}).Info("CLI arguments parsed")
+	logger.Logger.Info().
+		Str("inputFile", *inputFile).
+		Str("outputFile", *outputFile).
+		Str("inputFormat", *inputFormat).
+		Str("outputFormat", *outputFormat).
+		Msg("CLI arguments parsed")
 
 	// Validate required arguments
 	if *inputFile == "" || *inputFormat == "" || *outputFormat == "" {

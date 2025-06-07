@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"html/template"
 	"reflect"
+	"strings"
 
 	"github.com/da-luce/huebase/internal/color"
+	log "github.com/da-luce/huebase/internal/logger"
+	"github.com/da-luce/huebase/internal/objectmap"
 	"github.com/da-luce/huebase/templates"
 )
 
@@ -26,9 +29,7 @@ const (
 // BUT, we can't call objectmap when doing that (complains about not knowing about type of thing)
 // Also, goes against the grain of go... not idiomatic and would likely introduce future problems
 type Adapter interface {
-	Name() string // Return shorthand name
-	toAbstract() (*AbstractScheme, error)
-	fromAbstract(a *AbstractScheme) error
+	Name() string                  // Return shorthand name
 	FromString(input string) error // Parse input text into the adapter's struct
 	TemplateName() string          // Return path to the output generation template file
 }
@@ -147,18 +148,68 @@ type AbstractScheme struct {
 	SpecialColors SpecialColors
 }
 
+func onMissingField(fieldPath []string, srcVal reflect.Value) {
+	pathStr := strings.Join(fieldPath, ".")
+	log.Logger.Warn().
+		Msgf(
+			"Source field %q with value %v was unused during mapping",
+			pathStr,
+			srcVal.Interface(),
+		)
+}
+
+func onUnusedIntoAbstract(fieldPath []string, srcVal reflect.Value) {
+	pathStr := strings.Join(fieldPath, ".")
+	log.Logger.Debug().
+		Msgf("Abstract field %q with value %v was unused during mapping",
+			pathStr,
+			srcVal.Interface(),
+		)
+}
+
+func onUnusedFromAbstract(fieldPath []string, srcVal reflect.Value) {
+	pathStr := strings.Join(fieldPath, ".")
+	log.Logger.Debug().
+		Msgf("Abstract field %q with value %v was unused during mapping",
+			pathStr,
+			srcVal.Interface(),
+		)
+}
+
+func onMissingDest(fieldPath []string, srcVal reflect.Value) {
+	pathStr := strings.Join(fieldPath, ".")
+	log.Logger.Warn().
+		Msgf(
+			"Destination field %q with value %v was unused during mapping",
+			pathStr,
+			srcVal.Interface(),
+		)
+
+}
+
 func adaptScheme(reader Adapter, writer Adapter) error {
 	// Convert reader adapter to abstract scheme
-	abstractTheme, err := reader.toAbstract()
-	if err != nil {
+	var abstractTheme AbstractScheme
+	if err := objectmap.MapInto(
+		reader,
+		&abstractTheme,
+		onMissingField,
+		onUnusedIntoAbstract,
+		"abstract",
+	); err != nil {
 		return fmt.Errorf("failed to convert reader to abstract: %w", err)
 	}
 
 	// Fill in missing fields
-	fillUnsetInGroups(abstractTheme)
+	fillUnsetInGroups(&abstractTheme)
 
-	// Convert abstract scheme back to writer adapter
-	if err := writer.fromAbstract(abstractTheme); err != nil {
+	if err := objectmap.MapFrom(
+		&abstractTheme,
+		writer,
+		onUnusedFromAbstract,
+		onMissingDest,
+		"abstract",
+	); err != nil {
 		return fmt.Errorf("failed to convert abstract to writer: %w", err)
 	}
 
