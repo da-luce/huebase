@@ -36,7 +36,7 @@ type Adapter interface {
 
 // List of registered adapters
 var Adapters = []Adapter{
-	// &Base16Scheme{},
+	&Base16Scheme{},
 	&AlacrittyScheme{},
 }
 

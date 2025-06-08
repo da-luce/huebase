@@ -202,63 +202,6 @@ func TestSetNestedField(t *testing.T) {
 }
 
 // -----------------------------------------------------------------------------
-// traverseFields
-// -----------------------------------------------------------------------------
-
-func TestTraverseFields_AllFields(t *testing.T) {
-	var visited []string
-
-	testStruct := newTestStruct()
-
-	traverseDFS(reflect.ValueOf(testStruct), nil, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
-		visited = append(visited, joinPath(fullPath))
-		return true // always recurse
-	})
-
-	expected := []string{
-		"A", "B", "C",
-		"D", "D.E", "D.F",
-		"D.G", "D.G.H",
-		"D.G.I", "D.G.I.J", "D.G.I.J.I",
-	}
-
-	if !reflect.DeepEqual(visited, expected) {
-		t.Errorf("visited paths = %v\nexpected = %v", visited, expected)
-	}
-}
-
-func TestTraverseFields_SkipNested(t *testing.T) {
-	var visited []string
-
-	s := Struct{}
-
-	traverseDFS(reflect.ValueOf(s), nil, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
-		visited = append(visited, joinPath(fullPath))
-		// only recurse into top-level field "D"
-		return joinPath(fullPath) == "D"
-	})
-
-	expected := []string{"A", "B", "C", "D", "D.E", "D.F", "D.G"}
-
-	if !reflect.DeepEqual(visited, expected) {
-		t.Errorf("visited paths = %v\nexpected = %v", visited, expected)
-	}
-}
-
-func TestTraverseFields_NonStructInput(t *testing.T) {
-	called := false
-
-	traverseDFS(reflect.ValueOf("not a struct"), nil, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
-		called = true
-		return false
-	})
-
-	if called {
-		t.Error("visitFunc should not be called for non-struct input")
-	}
-}
-
-// -----------------------------------------------------------------------------
 // splitPath
 // -----------------------------------------------------------------------------
 

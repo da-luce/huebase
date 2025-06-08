@@ -9,7 +9,7 @@ import (
 	"reflect"
 
 	"github.com/da-luce/paletteport/internal/color"
-	"github.com/da-luce/paletteport/internal/objectmap"
+	"github.com/da-luce/paletteport/internal/structutil"
 )
 
 func TestAllAdapters(t *testing.T) {
@@ -52,7 +52,7 @@ func randomString(n int) string {
 }
 
 func fillDummyScheme(a Adapter) {
-	objectmap.TraverseStructDFS(a, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
+	structutil.TraverseStructDFS(a, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
 		// Skip non-pointer fields or already set pointers
 		if value.Kind() != reflect.Ptr || !value.IsNil() {
 			return true
@@ -131,7 +131,7 @@ func isColor(t reflect.Type) bool {
 func printSchemeContents(prefix string, scheme interface{}) {
 	fmt.Printf("%s:\n", prefix)
 
-	objectmap.TraverseStructDFS(scheme, func(path []string, field reflect.StructField, value reflect.Value) bool {
+	structutil.TraverseStructDFS(scheme, func(path []string, field reflect.StructField, value reflect.Value) bool {
 		// Skip unexported fields
 		if field.PkgPath != "" {
 			return true
