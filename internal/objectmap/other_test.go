@@ -1,8 +1,10 @@
-package objectmap
+package objectmap_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/da-luce/paletteport/internal/objectmap"
 )
 
 type SrcNested struct {
@@ -43,7 +45,7 @@ func TestMapFrom_BasicAndTagged(t *testing.T) {
 	var unusedSrcFields [][]string
 	var unusedDstFields [][]string
 
-	err := MapFrom(
+	err := objectmap.MapFrom(
 		src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrcFields = append(unusedSrcFields, path)
@@ -150,7 +152,7 @@ func TestMapFrom_PointerFields(t *testing.T) {
 
 	dst := &DstPtr{}
 
-	err := MapFrom(
+	err := objectmap.MapFrom(
 		src, dst,
 		func(path []string, val reflect.Value) {
 			unusedSrc = append(unusedSrc, path)

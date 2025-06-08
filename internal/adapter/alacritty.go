@@ -53,18 +53,18 @@ type AlacrittyScheme struct {
 	Colors Colors `toml:"colors"`
 }
 
+func (rw *AlacrittyScheme) Name() string {
+	return "alacritty"
+}
+
+func (rw *AlacrittyScheme) TemplateName() string {
+	return "alacritty.toml.tmpl"
+}
+
 func (a *AlacrittyScheme) FromString(input string) error {
 	err := toml.Unmarshal([]byte(input), a)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (a *AlacrittyScheme) ToString() (string, error) {
-	data, err := toml.Marshal(a)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }

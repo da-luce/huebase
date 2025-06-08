@@ -30,7 +30,7 @@ func (rw *Base16Scheme) Name() string {
 }
 
 func (rw *Base16Scheme) TemplateName() string {
-	return "base16.tmpl"
+	return "base16.yml.tmpl"
 }
 
 func (rw *Base16Scheme) FromString(input string) error {

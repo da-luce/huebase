@@ -42,7 +42,17 @@ func traverseDFS(
 			traverseDFS(fieldVal, fullPath, visitFunc)
 		}
 	}
+}
 
+// Provide wrapper for traverseDFS
+func TraverseStructDFS(data any,
+	visitFunc func(fullPath []string, field reflect.StructField, value reflect.Value) bool,
+) {
+	val := reflect.ValueOf(data)
+	if val.Kind() == reflect.Ptr {
+		val = val.Elem()
+	}
+	traverseDFS(val, nil, visitFunc)
 }
 
 // HasNestedFieldSlice returns (found, field metadata, field value).

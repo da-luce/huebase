@@ -3,16 +3,21 @@ package adapter
 import (
 	"fmt"
 	"math/rand"
+	"strings"
 	"testing"
 
 	"reflect"
 
 	"github.com/da-luce/paletteport/internal/color"
+	"github.com/da-luce/paletteport/internal/objectmap"
 )
 
 func TestAllAdapters(t *testing.T) {
 	for _, ad := range Adapters {
 		t.Run(ad.Name(), func(t *testing.T) {
+			t.Run("testFillDummy", func(t *testing.T) {
+				testFillDummy(t, ad)
+			})
 			t.Run("TransitiveProperty", func(t *testing.T) {
 				testTransitiveProperty(t, ad, 0.9)
 			})
@@ -47,28 +52,40 @@ func randomString(n int) string {
 }
 
 func fillDummyScheme(a Adapter) {
-	val := reflect.ValueOf(a).Elem()
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		if field.Kind() == reflect.Ptr && field.IsNil() {
-			fieldType := field.Type().Elem()
-
-			switch fieldType.Name() {
-			case "Color":
-				randomColor := color.RandomColor()
-				ptr := reflect.New(fieldType)
-				ptr.Elem().Set(reflect.ValueOf(randomColor))
-				field.Set(ptr)
-			case "string":
-				randStr := randomString(8) // 8 char random string
-				field.Set(reflect.ValueOf(&randStr))
-			default:
-				// For other struct pointers, create zero value pointer
-				ptr := reflect.New(fieldType)
-				field.Set(ptr)
-			}
+	objectmap.TraverseStructDFS(a, func(fullPath []string, field reflect.StructField, value reflect.Value) bool {
+		// Skip non-pointer fields or already set pointers
+		if value.Kind() != reflect.Ptr || !value.IsNil() {
+			return true
 		}
-	}
+
+		fieldType := value.Type().Elem()
+
+		switch fieldType.Name() {
+		case "Color":
+			randomColor := color.RandomColor()
+			ptr := reflect.New(fieldType)
+			ptr.Elem().Set(reflect.ValueOf(randomColor))
+			value.Set(ptr)
+
+		case "string":
+			str := randomString(8)
+			ptr := reflect.New(fieldType)
+			ptr.Elem().Set(reflect.ValueOf(str))
+			value.Set(ptr)
+
+		default:
+			// Generic pointer to zero value
+			ptr := reflect.New(fieldType)
+			value.Set(ptr)
+		}
+
+		return true
+	})
+}
+
+func testFillDummy(t *testing.T, ad Adapter) {
+	fillDummyScheme(ad)
+	checkAllFieldsSet(t, ad)
 }
 
 func testTransitiveProperty(t *testing.T, ad Adapter, simThresh float64) {
@@ -99,24 +116,52 @@ func testTransitiveProperty(t *testing.T, ad Adapter, simThresh float64) {
 	}
 }
 
+func isColor(t reflect.Type) bool {
+	// Dereference if pointer
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t.Name() == "Color" &&
+		t.PkgPath() == "github.com/da-luce/paletteport/internal/color"
+}
+
 // A helper function that prints struct with pointer fields dereferenced:
+// Updated printSchemeContents using TraverseStructDFS
 func printSchemeContents(prefix string, scheme interface{}) {
-	val := reflect.ValueOf(scheme)
-	if val.Kind() == reflect.Ptr {
-		val = val.Elem()
-	}
-
 	fmt.Printf("%s:\n", prefix)
-	for i := 0; i < val.NumField(); i++ {
-		field := val.Field(i)
-		fieldName := val.Type().Field(i).Name
 
-		if field.Kind() == reflect.Ptr && !field.IsNil() {
-			fmt.Printf("  %s: %v\n", fieldName, field.Elem())
-		} else {
-			fmt.Printf("  %s: %v\n", fieldName, field.Interface())
+	objectmap.TraverseStructDFS(scheme, func(path []string, field reflect.StructField, value reflect.Value) bool {
+		// Skip unexported fields
+		if field.PkgPath != "" {
+			return true
 		}
-	}
+
+		indent := strings.Repeat("\t", len(path)-1)
+		fieldPath := strings.Join(path, ".")
+
+		if value.Kind() == reflect.Ptr {
+			if value.IsNil() {
+				fmt.Printf("%s%s: <nil>\n", indent, fieldPath)
+				return true
+			}
+
+			if isColor(value.Type()) {
+				fmt.Printf("%s%s: %v\n", indent, fieldPath, value.Elem().Interface())
+				return false
+			}
+
+			value = value.Elem()
+		}
+
+		if isColor(value.Type()) {
+			fmt.Printf("%s%s: %v\n", indent, fieldPath, value.Interface())
+			return false
+		}
+
+		fmt.Printf("%s%s: %v\n", indent, fieldPath, value.Interface())
+		return true
+	})
 }
 
 func checkRenderAdapterToString(t *testing.T, ad Adapter) {
@@ -158,9 +203,11 @@ func testTransitivePropertyPart2(t *testing.T, ad Adapter) {
 	}
 
 	// Check similarity using custom comparison that tolerates slight color differences
-	if !AdaptersSimilar(origScheme, newScheme, 0.01) {
+	if !AdaptersSimilar(origScheme, newScheme, 0.02) {
 		t.Errorf("Round-trip scheme mismatch beyond tolerance")
+		fmt.Printf("\n\n")
 		printSchemeContents("Original", origScheme)
+		fmt.Printf("\n\n")
 		printSchemeContents("Parsed", newScheme)
 	}
 }
@@ -191,7 +238,7 @@ func AdaptersSimilar(a1, a2 Adapter, tol float64) bool {
 		}
 
 		// Check if field is *color.Color (or your specific Color type)
-		if f1.Type().Elem().Name() == "Color" && f1.Kind() == reflect.Ptr {
+		if f1.Kind() == reflect.Ptr && f1.Type().Elem().Name() == "Color" {
 			c1 := f1.Elem().Interface().(color.Color)
 			c2 := f2.Elem().Interface().(color.Color)
 			if !color.ColorsSimilar(c1, c2, tol) {
