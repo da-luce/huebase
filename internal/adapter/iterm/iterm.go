@@ -1,10 +1,13 @@
-package adapter
+package iterm
 
 import (
 	"bytes"
 
+	"github.com/da-luce/paletteport/internal/color"
 	"howett.net/plist"
 )
+
+type Color = color.Color
 
 // iTerm scheme struct for plist serialization/deserialization
 type ItermScheme struct {

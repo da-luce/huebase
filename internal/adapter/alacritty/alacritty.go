@@ -1,9 +1,12 @@
-package adapter
+package alacritty
 
 import (
+	"github.com/da-luce/paletteport/internal/color"
+
 	"github.com/pelletier/go-toml/v2"
 )
 
+type Color = color.Color
 type Primary struct {
 	Background *Color `toml:"background" abstract:"SpecialColors.Background"`
 	Foreground *Color `toml:"foreground" abstract:"SpecialColors.Foreground"`

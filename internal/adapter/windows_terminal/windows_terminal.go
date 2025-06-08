@@ -1,9 +1,12 @@
-package adapter
+package windows_terminal
 
 import (
 	"encoding/json"
+
+	"github.com/da-luce/paletteport/internal/color"
 )
 
+type Color = color.Color
 type WindowsTerminalScheme struct {
 	SchemeName          *string `json:"name" abstract:"Metadata.Name"`
 	Black               *Color  `json:"black" abstract:"AnsiColors.Black"`

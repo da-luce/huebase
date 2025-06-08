@@ -1,9 +1,12 @@
-package adapter
+package gogh
 
 import (
+	"github.com/da-luce/paletteport/internal/color"
+
 	"gopkg.in/yaml.v3"
 )
 
+type Color = color.Color
 type GoghScheme struct {
 	SchemeName *string `yaml:"name" abstract:"Metadata.Name"`
 	Author     *string `yaml:"author" abstract:"Metadata.Author"`

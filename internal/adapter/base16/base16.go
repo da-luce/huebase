@@ -1,9 +1,12 @@
-package adapter
+package base16
 
 import (
+	"github.com/da-luce/paletteport/internal/color"
+
 	"gopkg.in/yaml.v3"
 )
 
+type Color = color.Color
 type Base16Scheme struct {
 	Scheme *string `yaml:"scheme" abstract:"Metadata.Name"`
 	Author *string `yaml:"author" abstract:"Metadata.Author"`

@@ -7,6 +7,11 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/da-luce/paletteport/internal/adapter/alacritty"
+	"github.com/da-luce/paletteport/internal/adapter/base16"
+	"github.com/da-luce/paletteport/internal/adapter/gogh"
+	"github.com/da-luce/paletteport/internal/adapter/iterm"
+	"github.com/da-luce/paletteport/internal/adapter/windows_terminal"
 	"github.com/da-luce/paletteport/internal/color"
 	log "github.com/da-luce/paletteport/internal/logger"
 	"github.com/da-luce/paletteport/internal/objectmap"
@@ -28,11 +33,11 @@ type Adapter interface {
 
 // List of registered adapters
 var Adapters = []Adapter{
-	&Base16Scheme{},
-	&AlacrittyScheme{},
-	&GoghScheme{},
-	&ItermScheme{},
-	&WindowsTerminalScheme{},
+	&base16.Base16Scheme{},
+	&alacritty.AlacrittyScheme{},
+	&gogh.GoghScheme{},
+	&iterm.ItermScheme{},
+	&windows_terminal.WindowsTerminalScheme{},
 }
 
 type Color = color.Color
