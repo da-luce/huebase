@@ -270,6 +270,7 @@ func isZeroValue(v reflect.Value) bool {
 
 // FieldSimilarity compares two structs and returns the ratio of matching pointer field values,
 // counting all fields where at least one side is set (non-nil).
+// FIXME: the logic here sucks!!!
 func FieldSimilarity(a, b any) float64 {
 	va := reflect.ValueOf(a)
 	vb := reflect.ValueOf(b)

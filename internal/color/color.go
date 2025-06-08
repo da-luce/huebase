@@ -189,6 +189,9 @@ func clampFloatToUint8(f float64) uint8 {
 }
 
 func (c *Color) Hex() string {
+	if c == nil {
+		return "#ff0000" // default 100% red
+	}
 	r := clampFloatToUint8(c.Red)
 	g := clampFloatToUint8(c.Green)
 	b := clampFloatToUint8(c.Blue)
