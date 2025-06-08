@@ -5,7 +5,7 @@ import (
 )
 
 type WindowsTerminalScheme struct {
-	Name                *string `json:"name" abstract:"Metadata.Name"`
+	SchemeName          *string `json:"name" abstract:"Metadata.Name"`
 	Black               *Color  `json:"black" abstract:"AnsiColors.Black"`
 	Red                 *Color  `json:"red" abstract:"AnsiColors.Red"`
 	Green               *Color  `json:"green" abstract:"AnsiColors.Green"`
@@ -28,18 +28,18 @@ type WindowsTerminalScheme struct {
 	CursorColor         *Color  `json:"cursorColor" abstract:"SpecialColors.Cursor"`
 }
 
+func (rw *WindowsTerminalScheme) Name() string {
+	return "wt"
+}
+
+func (rw *WindowsTerminalScheme) TemplateName() string {
+	return "wt.json.tmpl"
+}
+
 func (rw *WindowsTerminalScheme) FromString(input string) error {
 	err := json.Unmarshal([]byte(input), rw)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (rw *WindowsTerminalScheme) ToString() (string, error) {
-	data, err := json.MarshalIndent(rw, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }

@@ -32,6 +32,7 @@ var Adapters = []Adapter{
 	&AlacrittyScheme{},
 	&GoghScheme{},
 	&ItermScheme{},
+	&WindowsTerminalScheme{},
 }
 
 type Color = color.Color
