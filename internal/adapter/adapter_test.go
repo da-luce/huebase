@@ -116,16 +116,6 @@ func testTransitiveProperty(t *testing.T, ad Adapter, simThresh float64) {
 	}
 }
 
-func isColor(t reflect.Type) bool {
-	// Dereference if pointer
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	return t.Name() == "Color" &&
-		t.PkgPath() == "github.com/da-luce/paletteport/internal/color"
-}
-
 // A helper function that prints struct with pointer fields dereferenced:
 // Updated printSchemeContents using TraverseStructDFS
 func printSchemeContents(prefix string, scheme interface{}) {
@@ -203,65 +193,15 @@ func testTransitivePropertyPart2(t *testing.T, ad Adapter) {
 	}
 
 	// Check similarity using custom comparison that tolerates slight color differences
-	if !AdaptersSimilar(origScheme, newScheme, 0.02) {
+	f := FieldSimilarity(origScheme, newScheme)
+	if f < 1.0 {
 		t.Errorf("Round-trip scheme mismatch beyond tolerance")
+		fmt.Printf("%f\n\n", f)
 		fmt.Printf("\n\n")
 		printSchemeContents("Original", origScheme)
 		fmt.Printf("\n\n")
 		printSchemeContents("Parsed", newScheme)
 	}
-}
-
-// AdaptersSimilar recursively compares two adapters field-by-field,
-// using ColorsSimilar for Color fields and DeepEqual for others.
-// FIXME: clean up this logic
-func AdaptersSimilar(a1, a2 Adapter, tol float64) bool {
-	v1 := reflect.ValueOf(a1).Elem()
-	v2 := reflect.ValueOf(a2).Elem()
-
-	if v1.Type() != v2.Type() {
-		return false
-	}
-
-	for i := 0; i < v1.NumField(); i++ {
-		f1 := v1.Field(i)
-		f2 := v2.Field(i)
-
-		// Handle nil pointers
-		if f1.Kind() == reflect.Ptr && f2.Kind() == reflect.Ptr {
-			if f1.IsNil() && f2.IsNil() {
-				continue
-			}
-			if f1.IsNil() || f2.IsNil() {
-				return false
-			}
-		}
-
-		// Check if field is *color.Color (or your specific Color type)
-		if f1.Kind() == reflect.Ptr && f1.Type().Elem().Name() == "Color" {
-			c1 := f1.Elem().Interface().(color.Color)
-			c2 := f2.Elem().Interface().(color.Color)
-			if !color.ColorsSimilar(c1, c2, tol) {
-				return false
-			}
-			continue
-		}
-
-		// For other pointer fields, recursively compare underlying values if structs
-		if f1.Kind() == reflect.Ptr && f1.Elem().Kind() == reflect.Struct {
-			if !AdaptersSimilar(f1.Interface().(Adapter), f2.Interface().(Adapter), tol) {
-				return false
-			}
-			continue
-		}
-
-		// For other fields, use DeepEqual
-		if !reflect.DeepEqual(f1.Interface(), f2.Interface()) {
-			return false
-		}
-	}
-
-	return true
 }
 
 type mockScheme struct {

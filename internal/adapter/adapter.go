@@ -10,16 +10,8 @@ import (
 	"github.com/da-luce/paletteport/internal/color"
 	log "github.com/da-luce/paletteport/internal/logger"
 	"github.com/da-luce/paletteport/internal/objectmap"
+	"github.com/da-luce/paletteport/internal/structutil"
 	"github.com/da-luce/paletteport/templates"
-)
-
-type LogLevel = int
-
-const (
-	LevelDebug LogLevel = iota
-	LevelInfo
-	LevelWarn
-	LevelError
 )
 
 // Scheme adapter structs must implement this interface for reading and writing
@@ -250,11 +242,44 @@ func ConvertTheme[S Adapter, W Adapter](input string, reader S, writer W) (strin
 	return RenderAdapterToString(writer)
 }
 
+func isColor(t reflect.Type) bool {
+	// Dereference if pointer
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t.Name() == "Color" &&
+		t.PkgPath() == "github.com/da-luce/paletteport/internal/color"
+}
+
+func isZeroValue(v reflect.Value) bool {
+	// Invalid values are zero by definition
+	if !v.IsValid() {
+		return true
+	}
+
+	// If it's a pointer, check if nil
+	if v.Kind() == reflect.Ptr || v.Kind() == reflect.Interface {
+		return v.IsNil()
+	}
+
+	// Use reflect.Zero to get zero value of the type and compare
+	zero := reflect.Zero(v.Type())
+	return reflect.DeepEqual(v.Interface(), zero.Interface())
+}
+
 // FieldSimilarity compares two structs and returns the ratio of matching pointer field values,
 // counting all fields where at least one side is set (non-nil).
-func FieldSimilarity(a, b interface{}) float64 {
-	va := reflect.ValueOf(a).Elem()
-	vb := reflect.ValueOf(b).Elem()
+func FieldSimilarity(a, b any) float64 {
+	va := reflect.ValueOf(a)
+	vb := reflect.ValueOf(b)
+
+	if va.Kind() == reflect.Ptr {
+		va = va.Elem()
+	}
+	if vb.Kind() == reflect.Ptr {
+		vb = vb.Elem()
+	}
 
 	if va.Type() != vb.Type() {
 		return 0.0
@@ -263,24 +288,73 @@ func FieldSimilarity(a, b interface{}) float64 {
 	total := 0
 	matching := 0
 
-	for i := 0; i < va.NumField(); i++ {
-		fa := va.Field(i)
-		fb := vb.Field(i)
-
-		if fa.Kind() != reflect.Ptr || fb.Kind() != reflect.Ptr {
-			continue // skip non-pointer fields
+	structutil.TraverseStructDFS(a, func(path []string, field reflect.StructField, valA reflect.Value) bool {
+		found, _, valB := structutil.HasNestedFieldSlice(vb, path)
+		if !found {
+			return true
 		}
 
-		// Count this field if either side is non-nil
-		if !fa.IsNil() || !fb.IsNil() {
-			total++
+		if !valA.IsValid() && !valB.IsValid() {
+			return true
+		}
 
-			// Count as match only if both are non-nil and deeply equal
-			if !fa.IsNil() && !fb.IsNil() && reflect.DeepEqual(fa.Interface(), fb.Interface()) {
+		// Dereference pointers once, if possible
+		if valA.Kind() == reflect.Ptr && !valA.IsNil() {
+			valA = valA.Elem()
+		}
+		if valB.Kind() == reflect.Ptr && !valB.IsNil() {
+			valB = valB.Elem()
+		}
+
+		// Only handle base kinds or color pointers here
+		kindA := valA.Kind()
+		kindB := valB.Kind()
+
+		// Helper to check if kind is a "base kind"
+		isBaseKind := func(k reflect.Kind) bool {
+			switch k {
+			case reflect.String, reflect.Bool,
+				reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+				reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr,
+				reflect.Float32, reflect.Float64:
+				return true
+			}
+			return false
+		}
+
+		// Handle color pointers (need special check, as we deref above)
+		if isColor(field.Type) {
+			// valA and valB here are already dereferenced, so they should be color.Color structs, not pointers
+			c1, ok1 := valA.Interface().(color.Color)
+			c2, ok2 := valB.Interface().(color.Color)
+			if !ok1 || !ok2 {
+				// If either is not a color.Color value (e.g. zero), skip
+				return true
+			}
+
+			total++
+			if color.ColorsSimilar(c1, c2, 0.01) {
 				matching++
 			}
+			return false
 		}
-	}
+
+		// If both sides are base kinds, compare them directly
+		if isBaseKind(kindA) || isBaseKind(kindB) {
+			nonZeroA := !isZeroValue(valA)
+			nonZeroB := !isZeroValue(valB)
+			if nonZeroA || nonZeroB {
+				total++
+				if reflect.DeepEqual(valA.Interface(), valB.Interface()) {
+					matching++
+				}
+			}
+			return false
+		}
+
+		// For any other kinds (struct, slice, map, etc), skip comparing (or count mismatch if desired)
+		return true
+	})
 
 	if total == 0 {
 		return 0.0
