@@ -5,7 +5,8 @@ import (
 )
 
 type GoghScheme struct {
-	Name       *string `yaml:"name" abstract:"Metadata.Name"`
+	SchemeName *string `yaml:"name" abstract:"Metadata.Name"`
+	Author     *string `yaml:"author" abstract:"Metadata.Author"`
 	Color01    *Color  `yaml:"color_01" abstract:"AnsiColors.Black"`
 	Color02    *Color  `yaml:"color_02" abstract:"AnsiColors.Red"`
 	Color03    *Color  `yaml:"color_03" abstract:"AnsiColors.Green"`
@@ -27,18 +28,18 @@ type GoghScheme struct {
 	Cursor     *Color  `yaml:"cursor" abstract:"SpecialColors.Cursor"`
 }
 
+func (rw *GoghScheme) Name() string {
+	return "gogh"
+}
+
+func (rw *GoghScheme) TemplateName() string {
+	return "gogh.yml.tmpl"
+}
+
 func (rw *GoghScheme) FromString(input string) error {
 	err := yaml.Unmarshal([]byte(input), rw)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (rw *GoghScheme) ToString() (string, error) {
-	data, err := yaml.Marshal(rw)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }

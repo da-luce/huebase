@@ -14,7 +14,7 @@ func TestAdapterRoundTripCompatibility(t *testing.T) {
 			fillDummyScheme(srcAdapter)
 
 			for _, dstAdapter := range Adapters {
-				t.Run(fmt.Sprintf("From_%s_To_%s", srcAdapter.Name(), dstAdapter.Name()), func(t *testing.T) {
+				t.Run(fmt.Sprintf("To_%s", dstAdapter.Name()), func(t *testing.T) {
 
 					// Adapt from src → dst
 					err := adaptScheme(srcAdapter, dstAdapter)

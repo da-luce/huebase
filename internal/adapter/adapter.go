@@ -30,6 +30,8 @@ type Adapter interface {
 var Adapters = []Adapter{
 	&Base16Scheme{},
 	&AlacrittyScheme{},
+	&GoghScheme{},
+	&ItermScheme{},
 }
 
 type Color = color.Color
@@ -217,7 +219,14 @@ func RenderAdapterToString(a Adapter) (string, error) {
 		return "", err
 	}
 
-	tmpl, err := template.New("out").Parse(string(tmplData))
+	tmpl := template.New("out")
+
+	// Add important functions
+	tmpl.Funcs(template.FuncMap{
+		"indent": templates.Indent,
+	})
+
+	tmpl, err = tmpl.Parse(string(tmplData))
 	if err != nil {
 		return "", err
 	}

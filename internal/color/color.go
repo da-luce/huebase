@@ -2,6 +2,7 @@ package color
 
 import (
 	"fmt"
+	"html/template"
 	"math/rand"
 	"strconv"
 	"sync"
@@ -206,4 +207,53 @@ func ColorsSimilar(c1, c2 Color, tol float64) bool {
 
 	distSq := dAlpha*dAlpha + dRed*dRed + dGreen*dGreen + dBlue*dBlue
 	return distSq <= tol*tol
+}
+
+// Marshalling
+
+// Implements the plist.Marshaler and plist.Unmarshaler behavior via plist tags
+func (c *Color) UnmarshalPlist(unmarshal func(interface{}) error) error {
+	var dict map[string]float64
+	if err := unmarshal(&dict); err != nil {
+		return err
+	}
+
+	// Extract color components safely
+	var ok bool
+	if c.Red, ok = dict["Red Component"]; !ok {
+		return fmt.Errorf("missing Red Component")
+	}
+	if c.Green, ok = dict["Green Component"]; !ok {
+		return fmt.Errorf("missing Green Component")
+	}
+	if c.Blue, ok = dict["Blue Component"]; !ok {
+		return fmt.Errorf("missing Blue Component")
+	}
+	if alpha, found := dict["Alpha Component"]; found {
+		c.Alpha = alpha
+	} else {
+		c.Alpha = 1.0 // default alpha if not provided
+	}
+
+	return nil
+}
+
+func (c *Color) ToITermXML() template.HTML {
+	var r, g, b float64
+	if c == nil {
+		r, g, b = 0, 0, 0 // or whatever default you want
+	} else {
+		r, g, b = c.Red, c.Green, c.Blue
+	}
+
+	dict := fmt.Sprintf(
+		`<dict>
+    <key>Blue Component</key>
+    <real>%f</real>
+    <key>Green Component</key>
+    <real>%f</real>
+    <key>Red Component</key>
+    <real>%f</real>
+</dict>`, b, g, r)
+	return template.HTML(dict)
 }
